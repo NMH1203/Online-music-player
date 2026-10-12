@@ -1531,6 +1531,25 @@
 										},
 										{
 											"_type": "ERDColumnView",
+											"_id": "AAAAAAGhMG9WZmS0jaU=",
+											"_parent": {
+												"$ref": "OMP-COMPARTMENT-0267"
+											},
+											"model": {
+												"$ref": "AAAAAAGhMG9WPmSxEBY="
+											},
+											"lineColor": "#355070",
+											"fillColor": "#F7FAFC",
+											"fontColor": "#1F2937",
+											"font": "Arial;13;0",
+											"parentStyle": true,
+											"left": 1565,
+											"top": 598,
+											"width": 275,
+											"height": 13
+										},
+										{
+											"_type": "ERDColumnView",
 											"_id": "OMP-COLUMNVIEW-0274",
 											"_parent": {
 												"$ref": "OMP-COMPARTMENT-0267"
@@ -1544,7 +1563,7 @@
 											"font": "Arial;13;0",
 											"parentStyle": true,
 											"left": 1565,
-											"top": 598,
+											"top": 613,
 											"width": 275,
 											"height": 13
 										},
@@ -1563,7 +1582,7 @@
 											"font": "Arial;13;0",
 											"parentStyle": true,
 											"left": 1565,
-											"top": 613,
+											"top": 628,
 											"width": 275,
 											"height": 13
 										}
@@ -1576,7 +1595,7 @@
 									"left": 1560,
 									"top": 503,
 									"width": 285,
-									"height": 128
+									"height": 143
 								}
 							],
 							"lineColor": "#355070",
@@ -1588,7 +1607,7 @@
 							"left": 1560,
 							"top": 480,
 							"width": 285,
-							"height": 151,
+							"height": 166,
 							"nameLabel": {
 								"$ref": "OMP-LABEL-0266"
 							},
@@ -4269,7 +4288,7 @@
 									"font": "Arial;12;0",
 									"parentStyle": false,
 									"left": 1620,
-									"top": 681,
+									"top": 689,
 									"width": 45,
 									"height": 12,
 									"alpha": -1.5707963267948966,
@@ -4289,7 +4308,7 @@
 									"font": "Arial;12;0",
 									"parentStyle": false,
 									"left": 1656,
-									"top": 625,
+									"top": 640,
 									"height": 12,
 									"alpha": 0,
 									"distance": 0,
@@ -4327,7 +4346,7 @@
 								"$ref": "OMP-ENTITYVIEW-0265"
 							},
 							"lineStyle": 2,
-							"points": "1656:631;1656:744",
+							"points": "1656:646;1656:744",
 							"nameLabel": {
 								"$ref": "OMP-EDGELABEL-0410"
 							},
@@ -6476,6 +6495,16 @@
 							"name": "cover_object_key",
 							"type": "VARCHAR",
 							"length": "255"
+						},
+						{
+							"_type": "ERDColumn",
+							"_id": "AAAAAAGhMG9WPmSxEBY=",
+							"_parent": {
+								"$ref": "OMP-ENTITY-0035"
+							},
+							"name": "status",
+							"type": "VARCHAR",
+							"length": "30"
 						},
 						{
 							"_type": "ERDColumn",
