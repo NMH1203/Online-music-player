@@ -7,7 +7,7 @@
 
 ## Tổng quan
 
-Đây là đồ án cuối kỳ môn Mobile App của nhóm 7 thành viên, được thực hiện trong 3 tuần. Sản phẩm là một ứng dụng nghe nhạc trực tuyến dành riêng cho Android và tập trung vào tệp âm thanh, với trải nghiệm cốt lõi gần giống Spotify: người dùng có thể tìm kiếm và phát nhạc, nhận gợi ý bài liên quan, xem lịch sử nghe, quản lý thư viện cá nhân và sử dụng trang hồ sơ. Backend, cơ sở dữ liệu và nơi lưu tệp âm thanh sẽ do nhóm tự triển khai và vận hành. Ứng dụng có hai gói Free và Premium; việc nâng cấp Premium được mô phỏng để phục vụ demo và không xử lý tiền thật. Mục tiêu của dự án là hoàn thành một luồng sử dụng xuyên suốt và ổn định để trình diễn, không phải tái tạo toàn bộ Spotify.
+Đây là đồ án cuối kỳ môn Mobile App của nhóm 6 thành viên, được thực hiện trong 3 tuần. Sản phẩm là một ứng dụng nghe nhạc trực tuyến dành riêng cho Android và tập trung vào tệp âm thanh, với trải nghiệm cốt lõi gần giống Spotify: người dùng có thể tìm kiếm và phát nhạc, nhận gợi ý bài liên quan, xem lịch sử nghe, quản lý thư viện cá nhân và sử dụng trang hồ sơ. Backend, cơ sở dữ liệu và nơi lưu tệp âm thanh sẽ do nhóm tự triển khai và vận hành. Ứng dụng có hai gói Free và Premium; việc nâng cấp Premium được mô phỏng để phục vụ demo và không xử lý tiền thật. Mục tiêu của dự án là hoàn thành một luồng sử dụng xuyên suốt và ổn định để trình diễn, không phải tái tạo toàn bộ Spotify.
 
 ## Mục tiêu
 

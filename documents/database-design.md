@@ -430,4 +430,4 @@ Spring Boot chạy Flyway khi khởi động. Mỗi thay đổi schema là một
 - Hiệu ứng animation tùy chỉnh.
 - Partitioning hoặc kiến trúc dữ liệu cho quy mô thương mại.
 
-Thiết kế này ưu tiên một luồng demo ổn định, dễ chia việc cho nhóm 7 người và có thể hoàn thành phần cốt lõi trong hai tuần đầu.
+Thiết kế này ưu tiên một luồng demo ổn định, dễ chia việc cho nhóm 6 người và có thể hoàn thành phần cốt lõi trong hai tuần đầu.
