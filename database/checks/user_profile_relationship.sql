@@ -12,6 +12,8 @@ BEGIN
  INSERT INTO users(id, email, password_hash)
  VALUES(u, u::text || '@profile-check.invalid', 'test-only-not-a-login-hash');
  INSERT INTO user_profiles(user_id, display_name) VALUES(u, 'Profile check');
+ INSERT INTO subscriptions(user_id, plan_id, source)
+ SELECT u, id, 'registration' FROM plans WHERE code = 'FREE';
  SET CONSTRAINTS fk_users_required_profile IMMEDIATE;
  SET CONSTRAINTS fk_users_required_profile DEFERRED;
 
@@ -68,6 +70,7 @@ BEGIN
  SET CONSTRAINTS fk_users_required_profile IMMEDIATE;
 
  -- Deleting an otherwise unreferenced user still cascades to its profile.
+ DELETE FROM subscriptions WHERE user_id = u;
  DELETE FROM users WHERE id = u;
  IF EXISTS(SELECT 1 FROM user_profiles WHERE user_id = u) THEN
   RAISE EXCEPTION 'User deletion did not cascade to profile';
