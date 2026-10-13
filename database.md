@@ -1,4 +1,9 @@
-# PostgreSQL bằng Docker
+# PostgreSQL bằng Docker cho Online Music Player
+
+Hướng dẫn này dùng cấu hình trong [compose.yaml](compose.yaml) và SQL tại
+[database/migrations](database/migrations). Thiết kế các bảng nằm trong
+[documents/database-design.md](documents/database-design.md); khi đối chiếu schema
+đang triển khai, dùng đầy đủ migration V1–V6.
 
 ## 1. Lệnh cần chạy
 
@@ -9,8 +14,9 @@ Mở PowerShell/terminal ở thư mục repo có `compose.yaml`, chạy:
 docker compose up -d
 ```
 
-Lần đầu Docker tải hai image. Compose tạo PostgreSQL 16, chờ DB nhận kết nối,
-rồi container `migrate` chạy Flyway tạo bảng và seed 2 gói + 5 thể loại.
+Lần đầu Docker tải hai image đã khóa phiên bản: `postgres:16.13-bookworm` và
+`redgate/flyway:11.20.2`. Compose tạo PostgreSQL 16, chờ DB nhận kết nối,
+rồi container `migrate` chạy Flyway áp dụng migration.
 `-d` = chạy nền; đóng terminal thì database vẫn chạy.
 Migration chạy sau khi DB khởi động, nên chỉ bắt đầu code/test khi kiểm tra thành công:
 
@@ -19,10 +25,35 @@ docker compose logs migrate
 docker compose ps -a
 ```
 
-Log phải có `Successfully applied 2 migrations` (lần sau có thể là `up to date`).
+DB mới phải áp dụng thành công **6 migration**; DB cũ chỉ áp dụng phần còn thiếu
+hoặc báo schema đã cập nhật.
 `db` phải healthy; `migrate` **Exited (0)** là bình thường: đã chạy xong công việc.
 Nếu migrate Exited khác 0, đọc log và sửa nguyên nhân trước khi dùng schema.
-Chạy lại `docker compose up -d` để khởi động và áp dụng migration mới.
+
+| Migration | Nội dung |
+|---|---|
+| V1 | Tạo schema, index và trigger cập nhật `updated_at` |
+| V2 | Seed Free/Premium và 5 thể loại |
+| V3 | Bắt buộc mỗi user có profile tại cuối transaction |
+| V4 | Thêm `albums.status`: `active` / `archived` |
+| V5 | Đồng bộ `albums.status` và `tracks.status` thành `varchar(30)` |
+| V6 | Bắt buộc mỗi user có đúng một subscription `active` tại cuối transaction |
+
+Kiểm tra phiên bản đã áp dụng:
+
+```sh
+docker compose exec db psql -U music_app -d music_player -c "SELECT version, description, success FROM flyway_schema_history ORDER BY installed_rank;"
+```
+
+Khi có migration mới, chạy rõ ràng một lượt Flyway rồi kiểm tra exit code:
+
+```sh
+docker compose up -d db
+docker compose run --rm migrate
+```
+
+Nếu V3/V6 lỗi vì dữ liệu cũ, bổ sung profile hoặc subscription hợp lệ cho user
+được báo lỗi trước khi chạy lại; migration không tự tạo dữ liệu thay thế.
 
 Docker **image** là gói PostgreSQL/Flyway đã đóng sẵn; **container** là tiến trình chạy
 image; **volume** là nơi giữ dữ liệu qua các lần dừng/tạo lại container.
@@ -49,16 +80,18 @@ spring.datasource.url=jdbc:postgresql://localhost:5432/music_player
 spring.datasource.username=music_app
 spring.datasource.password=${DB_PASSWORD}
 spring.jpa.hibernate.ddl-auto=validate
+spring.flyway.enabled=true
 ```
 
 Đặt biến `DB_PASSWORD` bằng password DB trước khi chạy backend. Không dùng Hibernate
 `create`/`create-drop` vì schema thuộc Flyway. Đừng commit mật khẩu máy dùng chung.
 
 SQL trong `database/migrations` là nguồn migration duy nhất.
-Khi khởi tạo backend, đóng gói **cùng các file này, nguyên nội dung** vào
+Khi khởi tạo backend, đóng gói **đầy đủ V1–V6, nguyên nội dung** vào
 `src/main/resources/db/migration/` và bật Flyway. Compose và Spring Boot cùng dùng
 `flyway_schema_history`, nên migration đã chạy sẽ được kiểm tra và bỏ qua.
-Không sửa V1/V2 sau khi đã chạy trên DB dùng chung; thêm `V3__...sql` cho thay đổi.
+Không sửa migration đã chạy trên DB dùng chung; thay đổi tiếp theo thêm
+`V7__...sql` hoặc version chưa dùng kế tiếp.
 Chưa có backend source trong repo hiện tại nên chưa thể cấu hình build đóng gói tự động.
 
 Nếu backend sau này cũng chạy trong Compose, host trong JDBC là `db`, port `5432`,
@@ -71,12 +104,26 @@ Lệnh trên host DB trên máy chạy Docker; không tự tạo server Internet
 Nhóm có hai cách: mỗi người chạy một DB local; hoặc các backend trên máy thành viên
 kết nối DB của leader qua LAN. Để dùng LAN, trước lần khởi động đầu:
 
-1. Copy `.env.example` thành `.env` (PowerShell: `Copy-Item .env.example .env`).
-2. Đặt password riêng và `DB_BIND_ADDRESS=0.0.0.0`.
+1. Tạo `.env` ở root repo theo mẫu bên dưới; repo hiện chưa có `.env.example`.
+   Nếu đã có `.env`, sửa file hiện tại để giữ cấu hình riêng.
+2. Đặt password riêng và `DB_BIND_ADDRESS=0.0.0.0` để backend của nhóm truy cập qua LAN.
 3. Leader chạy `docker compose up -d`; cho phép TCP cổng DB trong Windows Firewall
    trên mạng Private, giới hạn cho subnet/IP của nhóm.
 4. Lấy IPv4 Wi-Fi của leader bằng `ipconfig`. Ví dụ `192.168.1.20` thì JDBC của
    thành viên là `jdbc:postgresql://192.168.1.20:5432/music_player`.
+
+Mẫu `.env` cho local (dùng LAN thì đổi bind như bước 2):
+
+```dotenv
+POSTGRES_DB=music_player
+POSTGRES_USER=music_app
+POSTGRES_PASSWORD=music_local_dev_only
+DB_BIND_ADDRESS=127.0.0.1
+DB_PORT=5432
+```
+
+Repo hiện chưa ignore `.env`; thêm `.env` vào `.gitignore` trước khi dùng file
+chứa mật khẩu riêng. Không cần tạo `.env` nếu dùng cấu hình local mặc định.
 
 Các máy phải cùng LAN, leader bật máy và Docker; Wi-Fi phải cho thiết bị giao tiếp.
 Không mở cổng DB ra Internet. Nếu chỉ backend leader kết nối DB, giữ bind mặc định
@@ -118,7 +165,7 @@ không tự nạp để tránh biến metadata giả thành nhạc được phé
 PowerShell, với tài khoản/database mặc định:
 
 ```powershell
-Get-Content -Raw database/demo/seed_catalog.sql | docker compose exec -T db psql -v ON_ERROR_STOP=1 -U music_app -d music_player
+Get-Content -Raw -Encoding utf8 database/demo/seed_catalog.sql | docker compose exec -T db psql -v ON_ERROR_STOP=1 -U music_app -d music_player
 ```
 
 Bash:
@@ -136,11 +183,16 @@ profile và subscription Free trong cùng transaction.
 
 ## 6. Quy tắc backend phải thực hiện
 
-- Partial unique index ngăn **hơn một** subscription active; không đảm bảo user luôn
-  có một subscription. Register phải tạo Free và profile cùng transaction.
+- V3 dùng FK hoãn kiểm tra để bắt buộc mỗi user có đúng một profile tại cuối
+  transaction. V6 dùng constraint trigger hoãn kiểm tra kết hợp partial unique
+  index để bắt buộc đúng một subscription `active`. Register phải tạo user,
+  profile và subscription Free **trong cùng transaction**; insert user riêng
+  với autocommit sẽ thất bại.
 - Nâng cấp/reset: khóa row `users` bằng `SELECT ... FOR UPDATE` để tuần tự hóa thao tác
   của cùng user; kiểm tra idempotency key và user sở hữu event; đóng subscription cũ,
-  tạo subscription mới rồi ghi payment trong một transaction. Unique idempotency
+  tạo subscription mới rồi ghi payment trong một transaction. Khi đóng subscription,
+  đặt cả `status` (`cancelled` hoặc `expired`) và `ended_at`; không được commit
+  ở giữa lúc chưa tạo subscription thay thế. Unique idempotency
   ngăn ghi trùng; backend xử lý retry/unique conflict và trả kết quả trước đó.
 - Subscription hết hạn không tự đổi status vì thời gian trôi qua. Backend kiểm tra
   `starts_at <= now()` và `expires_at IS NULL OR expires_at > now()` khi lấy entitlement,
@@ -156,6 +208,9 @@ profile và subscription Free trong cùng transaction.
 - Status/role bổ sung dùng chữ thường theo SQL; Spring Boot cần map enum tương ứng.
   Độ dài varchar được chọn ở migration vì tài liệu mới chỉ quy định loại dữ liệu.
 - Soft delete user; archive track. FK chặn xóa track có lịch sử/library/playlist.
+- Archive album bằng `albums.status = 'archived'`; truy vấn catalog album lọc
+  `status = 'active'`. Archive giữ nguyên track và album yêu thích; xóa vật lý
+  album sẽ cascade `library_albums` và đặt `tracks.album_id = NULL`.
 
 ## 7. Backup trên Windows
 
@@ -178,18 +233,33 @@ Nếu đổi DB/user trong `.env`, thay chúng trong các lệnh psql/backup tư
 
 ## 8. Kiểm tra SQL
 
+Chạy trên DB local/test đã áp dụng đầy đủ V1–V6. Các lệnh dưới đây dừng khi SQL
+báo lỗi (`ON_ERROR_STOP=1`).
+
 Bash:
 
 ```sh
-docker compose exec -T db psql -U music_app -d music_player < database/checks/smoke.sql
+docker compose exec -T db psql -v ON_ERROR_STOP=1 -U music_app -d music_player < database/checks/smoke.sql
+docker compose exec -T db psql -v ON_ERROR_STOP=1 -U music_app -d music_player < database/checks/user_profile_relationship.sql
+docker compose exec -T db psql -v ON_ERROR_STOP=1 -U music_app -d music_player < database/checks/active_subscription.sql
 ```
 
 PowerShell:
 
 ```powershell
-Get-Content -Raw database/checks/smoke.sql | docker compose exec -T db psql -U music_app -d music_player
+Get-Content -Raw -Encoding utf8 database/checks/smoke.sql | docker compose exec -T db psql -v ON_ERROR_STOP=1 -U music_app -d music_player
+Get-Content -Raw -Encoding utf8 database/checks/user_profile_relationship.sql | docker compose exec -T db psql -v ON_ERROR_STOP=1 -U music_app -d music_player
+Get-Content -Raw -Encoding utf8 database/checks/active_subscription.sql | docker compose exec -T db psql -v ON_ERROR_STOP=1 -U music_app -d music_player
 ```
 
-Kiểm tra entitlement seed, email không phân biệt hoa thường, subscription active,
-retry favorite/history/payment, cascade playlist và giữ lịch sử. Các bản ghi kiểm tra
-được rollback; không thay thế integration test cho logic Java chưa triển khai.
+Mong đợi `NOTICE: PASS: ...`, kết thúc bằng `ROLLBACK`, không có `ERROR` và exit
+code bằng 0. PowerShell có thể kiểm tra `$LASTEXITCODE` ngay sau mỗi lệnh.
+
+| File | Phạm vi kiểm tra |
+|---|---|
+| `smoke.sql` | Entitlement seed, email không phân biệt hoa thường, subscription active, retry favorite/history/payment, archive/xóa album, cascade playlist và giữ lịch sử |
+| `user_profile_relationship.sql` | Profile bắt buộc, tính duy nhất, thay thế profile và cascade khi xóa user |
+| `active_subscription.sql` | Subscription bắt buộc, chặn xóa/hủy/chuyển chủ làm mất gói, thay gói trong cùng transaction |
+
+Các thay đổi dữ liệu kiểm tra được rollback; sequence/identity vẫn có thể tăng.
+Các script không thay thế integration test cho logic Java chưa triển khai.
