@@ -7,7 +7,7 @@
 
 ## 1. Mục tiêu của tài liệu
 
-Tài liệu này đề xuất một cấu trúc đủ rõ để nhóm 7 người có thể phát triển song song trong 3 tuần mà vẫn giữ được một luồng demo xuyên suốt. Kiến trúc ưu tiên:
+Tài liệu này đề xuất một cấu trúc đủ rõ để nhóm 6 người có thể phát triển song song trong 3 tuần mà vẫn giữ được một luồng demo xuyên suốt. Kiến trúc ưu tiên:
 
 - Hoàn thành và kiểm thử được luồng đăng nhập → tìm/chọn bài → phát nhạc → ghi nhận lịch sử.
 - Tách giao diện, nghiệp vụ và hạ tầng để thay đổi framework hoặc thư viện không làm lan truyền lỗi.
@@ -665,7 +665,7 @@ Mọi response lỗi nên có cùng envelope, ví dụ `code`, `message`, `detai
 | UI/E2E | Đăng nhập → tìm bài → phát → yêu thích; Free → Premium; lỗi mạng khi đang phát |
 | Device | Phát nền, khóa màn hình, media notification, nút tai nghe, tua, chuyển bài, hàng chờ và chuyển mạng trên ít nhất hai thiết bị |
 
-## 12. Chia việc gợi ý cho 7 thành viên
+## 12. Chia việc gợi ý cho 6 thành viên
 
 | Vai trò chính | Phạm vi |
 |---|---|
