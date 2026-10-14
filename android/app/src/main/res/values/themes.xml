@@ -6,4 +6,9 @@
     </style>
 
     <style name="Theme.Onlinemusicplayer" parent="Base.Theme.Onlinemusicplayer" />
+
+    <!-- Style đổi màu cho hiệu ứng trượt viên thuốc của Bottom Navigation -->
+    <style name="Widget.App.BottomNavigationView.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/accent_glow_subtle</item>
+    </style>
 </resources>
