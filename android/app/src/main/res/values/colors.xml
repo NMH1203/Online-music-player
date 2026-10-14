@@ -2,4 +2,41 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+
+    <!-- Navigation -->
+    <color name="nav_active">#C2F66B</color>
+    <color name="nav_inactive">#A4A8B1</color>
+    <color name="nav_bg">#101113</color>
+
+    <!-- Background và surface -->
+    <color name="background_primary">#101113</color>
+    <color name="surface_primary">#1B1D21</color>
+    <color name="surface_secondary">#25282D</color>
+    <color name="border_default">#34373D</color>
+
+    <!-- Text và icon -->
+    <color name="text_primary">#F5F6F7</color>
+    <color name="text_secondary">#A4A8B1</color>
+    <color name="text_muted">#727782</color>
+    <color name="icon_primary">#F5F6F7</color>
+    <color name="icon_secondary">#A4A8B1</color>
+
+    <!-- Accent -->
+    <color name="accent_primary">#C2F66B</color>
+    <color name="accent_content">#17210C</color>
+
+    <!-- Error và destructive -->
+    <color name="error">#FF9D9D</color>
+    <color name="error_container">#362326</color>
+
+    <!-- Overlay và hiệu ứng -->
+    <color name="modal_scrim">#A6000000</color>
+    <color name="loading_scrim">#88101113</color>
+    <color name="accent_glow_subtle">#1AC2F66B</color>
+    <color name="accent_glow">#1FC2F66B</color>
+    <color name="accent_shadow">#40C2F66B</color>
+    <color name="accent_stroke_glow">#47C2F66B</color>
+    <color name="dark_inner_shadow">#29101113</color>
+
 </resources>
