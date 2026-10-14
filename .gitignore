@@ -1,15 +1,20 @@
+# IDE files
+.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+.vscode/
+
+# Build artifacts
+build/
+**/build/
+.gradle/
+**/.gradle/
+
+# Local configuration
 local.properties
+**/local.properties
+.env
+*.local
+
+# System files
+.DS_Store
+Thumbs.db

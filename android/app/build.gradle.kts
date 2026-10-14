@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace = "vn.edu.usth.online_music_player"
-    compileSdk = 37
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "vn.edu.usth.online_music_player"
         minSdk = 26
-        targetSdk = 37
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 

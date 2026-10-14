@@ -53,9 +53,9 @@
 
 ## Hướng kỹ thuật
 
-- Ứng dụng mobile chỉ giao tiếp với backend API, không kết nối trực tiếp tới cơ sở dữ liệu.
-- Ứng dụng Android dùng Hilt để cung cấp dependency cho Activity, Fragment, ViewModel, `MediaSessionService`, API client và repository; ưu tiên constructor injection để các thành phần dễ thay thế khi kiểm thử.
-- Access token chỉ được giữ trong RAM. Refresh token được mã hóa bằng khóa AES-GCM lưu trong Android Keystore; Preferences DataStore chỉ lưu cài đặt đơn giản. MVP không dùng Room hoặc cache metadata; hàng đợi phát chỉ tồn tại trong `MediaSessionService` của phiên chạy hiện tại.
+- Ứng dụng mobile phát triển bằng Java + XML Views trên Android Studio, chỉ giao tiếp với backend API, không kết nối trực tiếp tới cơ sở dữ liệu.
+- Ứng dụng Android dùng Hilt để cung cấp dependency cho Activity, Fragment, ViewModel, `MediaSessionService`, API client và repository; ưu tiên constructor injection để các thành phần dễ thay thế khi kiểm thử. State management sử dụng AndroidX ViewModel kết hợp LiveData.
+- Access token chỉ được giữ trong RAM. Refresh token được mã hóa bằng khóa AES-GCM lưu trong Android Keystore; SharedPreferences / Preferences DataStore chỉ lưu cài đặt đơn giản. MVP không dùng Room hoặc cache metadata; hàng đợi phát chỉ tồn tại trong `MediaSessionService` của phiên chạy hiện tại.
 - Backend cấp access token JWT ký bằng HS256, hết hạn sau 15 phút. Refresh token là chuỗi ngẫu nhiên hết hạn sau 7 ngày; backend chỉ lưu hash, cấp token mới và vô hiệu hóa token cũ sau mỗi lần refresh, đồng thời thu hồi token khi đăng xuất hoặc đổi mật khẩu.
 - PostgreSQL lưu người dùng, metadata bài hát, playlist, thư viện và lịch sử nghe.
 - Trong MVP, tệp âm thanh và ảnh bìa catalog được nhóm chuẩn bị sẵn trong MinIO chạy trực tiếp trên server; database chỉ lưu metadata và object key. Người dùng không tải tệp lên hệ thống. Spring Boot đọc object và proxy HTTP Range về Android.
