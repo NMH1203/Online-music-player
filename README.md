@@ -16,22 +16,22 @@ Android → Spring Boot :8080 → PostgreSQL :5432
 
 ~~~text
 D:\
-Online-music-player\                           # Root project mở bằng Android Studio
-    ├── app\
-    ├── gradle
-    │   ├── libs.versions.toml
-    │   ├── wrapper\gradle-wrapper.jar
-    │   ├── wrapper\gradle-wrapper.properties
-    ├── gradle.properties
-    ├── gradlew.bat
-    ├── build.gradle.kts
-    ├── compose.yaml
-    ├── database\
-    │   ├── migrations\                        # V1–V5
+Online-music-player\                           # Repository root
+    ├── android\                               # Dự án Android Studio (Java + XML Views)
+    │   ├── app\                               # Module ứng dụng Android
+    │   ├── gradle\                            # Gradle catalog và wrapper
+    │   ├── build.gradle.kts                   # Root build script của Android
+    │   ├── settings.gradle.kts                # Cấu hình project Android
+    │   └── gradlew / gradlew.bat
+    ├── backend\                               # Dự án Spring Boot REST API (Java 17)
+    ├── database\                              # Migrations (V1-V6), demo catalog, checks
+    │   ├── migrations\
     │   ├── demo\seed_catalog.sql
     │   └── checks\
+    ├── documents\                             # Tài liệu thiết kế & kiến trúc
+    ├── compose.yaml                           # Docker Compose cho PostgreSQL & Flyway
     ├── database.md
-    └── documents\
+    └── README.md
 ~~~
 
 ## 2. Chuẩn bị môi trường

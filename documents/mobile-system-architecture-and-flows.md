@@ -18,19 +18,19 @@ Tài liệu này đề xuất một cấu trúc đủ rõ để nhóm 6 người
 
 ## 2. Giả định và quyết định nền tảng
 
-Repository hiện chưa có mã nguồn. Framework mobile đã chốt là Kotlin Native phát triển bằng Android Studio; backend đã chốt Java với Spring Boot. Cấu trúc bên dưới vì vậy cụ thể cho Android và Spring Boot nhưng vẫn giữ các ranh giới nghiệp vụ độc lập với UI framework.
+Repository hiện chưa có mã nguồn. Framework mobile đã chốt là Java + XML Views phát triển bằng Android Studio; backend đã chốt Java với Spring Boot. Cấu trúc bên dưới vì vậy cụ thể cho Android và Spring Boot nhưng vẫn giữ các ranh giới nghiệp vụ độc lập với UI framework.
 
 | Nội dung | Lựa chọn | Trạng thái |
 |---|---|---|
-| Mobile | Kotlin Native trên Android; feature-first, một chiều dữ liệu | Đã chốt: phát triển bằng Android Studio |
+| Mobile | Java + XML Views trên Android; feature-first, một chiều dữ liệu | Đã chốt: phát triển bằng Android Studio |
 | Android UI | XML Views với Activity/Fragment | Đã chốt; không dùng Jetpack Compose trong MVP |
 | Backend | Java + Spring Boot; modular monolith, REST/JSON | Đã chốt |
 | Database | PostgreSQL 16 + Flyway | Đã chốt |
 | Audio storage | MinIO chạy trực tiếp trên server | Đã chốt cho MVP |
 | Streaming | Spring Boot proxy, hỗ trợ HTTP Range và trả `206 Partial Content` | Đã chốt; signed URL để sau |
 | Authentication | JWT HS256 15 phút + opaque refresh token 7 ngày | Đã chốt; lưu hash, rotation mỗi lần refresh và thu hồi khi logout/đổi mật khẩu |
-| Local data | Android Keystore + Preferences DataStore | Đã chốt; access token trong RAM, refresh token được mã hóa, không dùng Room hoặc cache metadata |
-| State management | AndroidX ViewModel + StateFlow | Đã chốt; XML Views collect bằng `repeatOnLifecycle` |
+| Local data | Android Keystore + SharedPreferences / Preferences DataStore | Đã chốt; access token trong RAM, refresh token được mã hóa, không dùng Room hoặc cache metadata |
+| State management | AndroidX ViewModel + LiveData | Đã chốt; XML Views quan sát bằng `getViewLifecycleOwner()` |
 | Dependency injection | Hilt | Đã chốt; dùng cho Activity, Fragment, ViewModel, Service và các dependency dùng chung |
 | Playback | AndroidX Media3 ExoPlayer trong `MediaSessionService` | Đã chốt; hỗ trợ foreground service và phát nền |
 | Recommendation | Content-based có trọng số từ metadata và lịch sử | Đã chốt; cold start dưới 5 lượt hợp lệ, seed 50 track |
@@ -77,7 +77,7 @@ C4Container
     Person(listener, "Người nghe", "Sử dụng ứng dụng trên Android")
 
     System_Boundary(system, "Online Music Player") {
-        Container(mobile, "Android App", "Kotlin Native / XML Views / Media3", "Activity, Fragment, điều hướng, trạng thái và phát nhạc nền bằng MediaSessionService")
+        Container(mobile, "Android App", "Java / XML Views / Media3", "Activity, Fragment, điều hướng, trạng thái và phát nhạc nền bằng MediaSessionService")
         Container(api, "Backend API", "Java / Spring Boot", "Xác thực, catalog, thư viện, lịch sử, gợi ý và entitlement")
         ContainerDb(db, "PostgreSQL", "PostgreSQL 16", "Tài khoản, metadata, playlist, lịch sử và subscription")
         ContainerDb(storage, "MinIO", "S3-compatible object storage", "Tệp âm thanh và ảnh bìa catalog do nhóm chuẩn bị")
@@ -101,7 +101,7 @@ C4Deployment
     title Deployment Diagram - Online Music Player MVP
 
     Deployment_Node(phone, "Thiết bị Android", "Android device", "Chạy ứng dụng và MediaSessionService") {
-        Container(mobileRuntime, "Android App", "Kotlin / XML Views / Media3", "Giao diện, trạng thái và phát nhạc")
+        Container(mobileRuntime, "Android App", "Java / XML Views / Media3", "Giao diện, trạng thái và phát nhạc")
     }
 
     Deployment_Node(server, "Máy Windows của nhóm", "Windows 10 hoặc 11", "Chạy Spring Boot, PostgreSQL và MinIO") {
@@ -123,46 +123,59 @@ C4Deployment
 
 Windows Firewall chỉ mở cổng Spring Boot `8080` trong mạng riêng để điện thoại kiểm thử truy cập. PostgreSQL và MinIO bind vào localhost. Android chỉ cho phép HTTP LAN trong debug build; nếu đưa hệ thống ra Internet hoặc phát hành thật thì phải bổ sung HTTPS.
 
-## 4. Cấu trúc ứng dụng mobile
+## 4. Cấu trúc dự án và ứng dụng mobile
 
-### 4.1. Cấu trúc thư mục đề xuất
+### 4.1. Cấu trúc phân tách toàn dự án (Monorepo)
 
-```text
-mobile/
-├── app/                         # Bootstrap Hilt, navigation và app lifecycle
-├── core/
-│   ├── config/                  # Biến môi trường và build configuration
-│   ├── network/                 # HTTP client, auth interceptor, DTO lỗi chuẩn
-│   ├── storage/                 # Secure storage và Preferences DataStore
-│   ├── playback/                # ExoPlayer, MediaSessionService, MediaController và queue
-│   ├── design_system/           # Theme và UI component dùng chung
-│   └── testing/                 # Fake, fixture và test helper
-├── features/
-│   ├── auth/
-│   ├── home/
-│   ├── search/
-│   ├── player/
-│   ├── library/
-│   ├── playlists/
-│   ├── history/
-│   ├── profile/
-│   └── subscription/
-└── shared/
-    ├── models/                  # Kiểu thật sự dùng chung, giữ ở mức tối thiểu
-    └── utilities/               # Hàm thuần dùng chung, không chứa nghiệp vụ
-```
-
-Mỗi feature chỉ tạo đủ các lớp mà feature đó cần:
+Hệ thống được tổ chức phân tách rõ ràng thành 4 thành phần độc lập:
 
 ```text
-feature/
-├── presentation/                # Screen, component, view state và event
-├── application/                 # Use case/controller điều phối luồng
-├── domain/                      # Entity, value object, rule và repository contract
-└── data/                        # API DTO, mapper và repository implementation
+Online-music-player/
+├── android/                     # Dự án Android Studio hoàn chỉnh (Java + XML Views)
+│   ├── app/                     # Module mã nguồn Android chính
+│   ├── gradle/                  # Gradle version catalog & wrapper
+│   ├── build.gradle.kts         # Root build configuration
+│   ├── settings.gradle.kts      # Project settings
+│   └── gradlew / gradlew.bat    # Gradle wrapper scripts
+├── backend/                     # Dự án Spring Boot REST API (Java 17, modular monolith)
+│   ├── src/main/java/           # Bootstrap, modules, shared
+│   ├── src/main/resources/      # application.yml
+│   └── pom.xml / build.gradle   # Quản lý dependency backend
+├── database/                    # Quản lý Database & Migrations
+│   ├── migrations/              # Flyway SQL migrations (V1 -> V6)
+│   ├── demo/                    # Seed catalog SQL
+│   └── checks/                  # Script kiểm tra dữ liệu
+├── documents/                   # Tài liệu đặc tả, thiết kế, sơ đồ luồng
+│   ├── online-music-player-project-brief.md
+│   ├── mobile-system-architecture-and-flows.md
+│   └── database-design.md
+└── compose.yaml                 # Docker Compose khởi chạy PostgreSQL 16 & Flyway
 ```
 
-Không bắt buộc tạo bốn thư mục rỗng cho feature rất nhỏ. Mục tiêu là giữ ranh giới, không phải tăng số lượng file.
+### 4.2. Cấu trúc mã nguồn Android (`android/app`)
+
+Được xây dựng bằng **Java + XML Views**, hỗ trợ mở trực tiếp bằng Android Studio:
+
+```text
+android/app/src/main/java/vn/edu/usth/online_music_player/
+├── MainActivity.java            # Single-activity chứa BottomNavigationView & NavHostFragment
+├── core/                        # Tầng hạ tầng dùng chung cho toàn bộ app
+│   ├── playback/                # ExoPlayer, MediaSessionService, MediaController
+│   ├── network/                 # Retrofit API clients, OkHttp auth interceptor
+│   ├── storage/                 # Android Keystore, SharedPreferences / DataStore
+│   └── config/                  # Constants, AppConfig
+├── features/                    # Phân chia theo từng tính năng (Feature-first)
+│   ├── auth/                    # Login, Register Activity/Fragment & ViewModel
+│   ├── home/                    # HomeFragment, HomeViewModel, Adapter
+│   ├── search/                  # SearchFragment, SearchViewModel, Adapter
+│   ├── library/                 # LibraryFragment, LibraryViewModel
+│   ├── player/                  # NowPlayingBottomSheet / MiniPlayer, PlayerViewModel
+│   ├── playlists/               # PlaylistDetailFragment & ViewModel
+│   └── profile/                 # ProfileFragment, Subscription/Paywall UI
+└── shared/                      # Models DTO và tiện ích thuần túy
+    ├── models/
+    └── utils/
+```
 
 ### 4.2. Quy tắc dependency trên mobile
 
@@ -706,11 +719,11 @@ Mỗi phạm vi vẫn cần ít nhất một người review chéo. API contract
 
 ### 15.1. Quyết định đã chốt
 
-- **Mobile:** Kotlin Native, phát triển bằng Android Studio.
+- **Mobile:** Java, phát triển bằng Android Studio (XML Views).
 - **Android UI:** XML Views với Activity/Fragment; không dùng Jetpack Compose trong MVP.
-- **State management:** AndroidX ViewModel + StateFlow; Fragment collect state bằng `repeatOnLifecycle`.
+- **State management:** AndroidX ViewModel + LiveData; Fragment quan sát state bằng `getViewLifecycleOwner()`.
 - **Dependency injection:** Hilt; dùng constructor injection cho repository/use case và Android entry point cho Activity, Fragment, ViewModel cùng `MediaSessionService`.
-- **Lưu trữ cục bộ:** access token chỉ giữ trong RAM; refresh token được mã hóa bằng khóa AES-GCM nằm trong Android Keystore; Preferences DataStore lưu cài đặt đơn giản. Không dùng Room hoặc cache metadata; queue không được khôi phục sau khi tiến trình bị hủy.
+- **Lưu trữ cục bộ:** access token chỉ giữ trong RAM; refresh token được mã hóa bằng khóa AES-GCM nằm trong Android Keystore; SharedPreferences / Preferences DataStore lưu cài đặt đơn giản. Không dùng Room hoặc cache metadata; queue không được khôi phục sau khi tiến trình bị hủy.
 - **Xác thực:** access token là JWT HS256 hết hạn sau 15 phút; refresh token ngẫu nhiên hết hạn sau 7 ngày, backend chỉ lưu hash, rotation sau mỗi lần refresh và thu hồi khi logout hoặc đổi mật khẩu.
 - **Lượt nghe:** một phiên được tính khi thời gian nghe thực tế đạt `min(30 giây, 50% thời lượng bài)`; không cộng thời gian tua và chống ghi trùng bằng `client_event_id`.
 - **Công thức gợi ý MVP:** 45% độ phù hợp thể loại, 30% mức yêu thích nghệ sĩ từ lịch sử/favorite, 15% độ phổ biến và 10% độ mới; loại bài đang phát cùng 20 bài vừa nghe. Free và Premium dùng cùng một thuật toán.
