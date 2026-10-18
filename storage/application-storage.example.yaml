@@ -1,0 +1,8 @@
+# Contract for a future Spring Boot @ConfigurationProperties(prefix = "storage").
+# This YAML is an integration example; no backend implementation exists yet.
+storage:
+  endpoint: ${MINIO_ENDPOINT:http://127.0.0.1:9000}
+  region: ${MINIO_REGION:us-east-1}
+  bucket: ${MINIO_BUCKET:music-demo}
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}

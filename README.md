@@ -2,7 +2,9 @@
 
 Ứng dụng nghe nhạc trực tuyến dành cho Android, phục vụ đồ án Mobile App của nhóm 6 thành viên. Phạm vi dự kiến gồm tài khoản, tìm kiếm, phát nhạc nền, gợi ý, thư viện, playlist, lịch sử, hồ sơ và Free/Premium với thanh toán giả lập.
 
-Các lệnh bên dưới dùng **PowerShell trên Windows**.
+Các lệnh bên dưới dùng **PowerShell trên Windows**. Cấu hình PostgreSQL/MinIO, migration **V1–V8** và bộ seed **50 MP3 được cấp phép CC BY 4.0** nằm tại **D:\MobileAppPrj**; mã nguồn Android vẫn nằm tại **D:\Online-music-player**. Backend và playback Android chưa được triển khai trong phần cấu hình này.
+
+Hướng dẫn đầy đủ: [Cài MinIO, mapping metadata và seed nhạc demo](documents/minio-demo-setup.md).
 
 ## 1. Kiến trúc và thư mục
 
@@ -16,22 +18,21 @@ Android → Spring Boot :8080 → PostgreSQL :5432
 
 ~~~text
 D:\
-Online-music-player\                           # Repository root
-    ├── android\                               # Dự án Android Studio (Java + XML Views)
-    │   ├── app\                               # Module ứng dụng Android
-    │   ├── gradle\                            # Gradle catalog và wrapper
-    │   ├── build.gradle.kts                   # Root build script của Android
-    │   ├── settings.gradle.kts                # Cấu hình project Android
-    │   └── gradlew / gradlew.bat
-    ├── backend\                               # Dự án Spring Boot REST API (Java 17)
-    ├── database\                              # Migrations (V1-V6), demo catalog, checks
-    │   ├── migrations\
-    │   ├── demo\seed_catalog.sql
-    │   └── checks\
-    ├── documents\                             # Tài liệu thiết kế & kiến trúc
-    ├── compose.yaml                           # Docker Compose cho PostgreSQL & Flyway
-    ├── database.md
-    └── README.md
+├── MobileAppPrj\                              # Chạy DB, MinIO và seed tại đây
+│   ├── compose.yaml
+│   ├── compose.minio.yaml
+│   ├── database\migrations\                  # V1–V8
+│   ├── database\demo\                        # Fixture draft + manifest nhạc thật
+│   ├── scripts\Setup-Minio.ps1
+│   ├── scripts\Seed-DemoMusic.ps1
+│   ├── storage\
+│   └── documents\minio-demo-setup.md
+└── Online-music-player\                      # Root project mở bằng Android Studio
+    ├── app\
+    ├── gradle\
+    ├── gradle.properties
+    ├── gradlew.bat
+    └── build.gradle.kts
 ~~~
 
 ## 2. Chuẩn bị môi trường
@@ -47,7 +48,9 @@ Online-music-player\                           # Repository root
 | Docker Desktop | Linux containers; Windows dùng WSL 2; mở Docker Desktop trước khi chạy DB |
 | Internet | Tải Gradle, dependency, SDK và Docker images |
 | DBeaver / pgAdmin | Tùy chọn, xem dữ liệu PostgreSQL |
-| MinIO / backend JAR | Cần cho luồng hoàn chỉnh sau khi nhóm triển khai |
+| Python | Python 3.12 và pip để chạy seed MP3 |
+| MinIO AIStor | Image đã có; cần file license hợp lệ cho Setup-Minio.ps1 |
+| Backend JAR | Cần cho luồng ứng dụng hoàn chỉnh sau khi nhóm triển khai |
 
 Cấu hình khóa trong repo: **AGP 9.4.1**, **Gradle Wrapper 9.6.0**, application ID **vn.edu.usth.online_music_player**, PostgreSQL image **postgres:16.13-bookworm**, Flyway image **redgate/flyway:11.20.2**.
 
@@ -76,34 +79,29 @@ Mặc định compose.yaml:
 | JDBC trên Windows | jdbc:postgresql://localhost:5432/music_player |
 | Host từ container cùng Compose | db:5432 |
 
-Không cần .env nếu dùng mặc định. Muốn tùy chỉnh, tạo **D:\Online-music-player\.env trước lần khởi tạo đầu tiên**. Repo chưa có .env.example:
+Chạy DB từ **D:\MobileAppPrj** để dùng đủ V1–V8. Hai thư mục có thể cùng dùng Compose project name `music-player`; không coi chúng là hai DB độc lập. Mỗi người tự host nên tạo **`.env` riêng trước lần khởi tạo đầu tiên** từ file mẫu đã commit; nếu đã có DB, dùng đúng thông số hiện tại:
 
 ~~~powershell
-Set-Location D:\Online-music-player
-@'
-POSTGRES_DB=music_player
-POSTGRES_USER=music_app
-POSTGRES_PASSWORD=music_local_dev_only
-DB_BIND_ADDRESS=127.0.0.1
-DB_PORT=5432
-'@ | Set-Content -LiteralPath .env -Encoding utf8
+Set-Location D:\MobileAppPrj
+Copy-Item .env.example .env
+# Mở .env và thay POSTGRES_PASSWORD bằng mật khẩu riêng trước khi chạy Docker.
 ~~~
 
-Lệnh trên ghi đè .env nếu đã tồn tại; khi có cấu hình riêng, sửa file đó. Mật khẩu mẫu dành cho local. Không commit bí mật; bổ sung .env vào .gitignore vì repo hiện chưa ignore file này.
+Chỉ copy khi `.env` chưa tồn tại; không ghi đè cấu hình của DB đã khởi tạo. `.env` thực tế, credential MinIO và runtime đã được ignore; chỉ commit `.env.example` không chứa secret.
 
 Cổng 5432 bị chiếm: đặt **DB_PORT=5433**, đổi JDBC trên Windows sang localhost:5433; cổng nội bộ Docker vẫn 5432.
 
 ### 3.2. Khởi động và kiểm tra
 
 ~~~powershell
-Set-Location D:\Online-music-player
+Set-Location D:\MobileAppPrj
 docker compose config --quiet
 docker compose up -d
 docker compose ps -a
 docker compose logs migrate
 ~~~
 
-Mong đợi **db healthy**, **migrate Exited (0)**. Migrate là container chạy một lần; Exited (0) nghĩa là thành công. DB mới áp dụng **5 migration**; DB cũ chỉ áp dụng phần thiếu hoặc báo đã cập nhật.
+Mong đợi **db healthy**, **migrate Exited (0)**. Migrate là container chạy một lần; Exited (0) nghĩa là thành công. DB mới áp dụng **8 migration**; DB cũ chỉ áp dụng phần thiếu hoặc báo đã cập nhật.
 
 | Migration | Nội dung |
 |---|---|
@@ -112,6 +110,9 @@ Mong đợi **db healthy**, **migrate Exited (0)**. Migrate là container chạy
 | V3 | Bắt buộc user có profile tại cuối transaction |
 | V4 | Thêm album status active / archived |
 | V5 | Đồng bộ độ dài status của album và track |
+| V6 | Bắt buộc mỗi user có đúng một subscription active ở cuối transaction |
+| V7 | Metadata object MinIO, SHA-256 và nguồn/giấy phép audio |
+| V8 | Track `published` phải có `track_audio_metadata` tại cuối transaction |
 
 ~~~powershell
 docker compose exec db psql -U music_app -d music_player -c "SELECT version, description, success FROM flyway_schema_history ORDER BY installed_rank;"
@@ -136,18 +137,21 @@ docker compose exec db psql -U music_app -d music_player -c "SELECT (SELECT coun
 docker compose exec db psql -U music_app -d music_player -c "SELECT title, status, audio_object_key FROM tracks ORDER BY title LIMIT 5;"
 ~~~
 
-Fixture tạo **10 nghệ sĩ, 10 album, 50 track**, gắn 5 thể loại; chạy lại không nhân đôi fixture.
+Fixture tạo **10 nghệ sĩ, 10 album, 50 track draft**, gắn 5 thể loại; chạy lại không nhân đôi fixture. Đây là metadata với thông số placeholder, chưa có audio; không chuyển fixture này sang published. Bộ nhạc thật riêng dùng `Seed-DemoMusic.ps1` ở mục 5.1 và có thể cùng tồn tại với fixture.
 
 ### 3.4. Kiểm tra SQL
 
-Chạy trên DB local/test đã áp dụng V1–V5:
+Chạy trên DB local/test đã áp dụng V1–V8:
 
 ~~~powershell
 Get-Content -Raw -Encoding utf8 .\database\checks\smoke.sql | docker compose exec -T db psql -v ON_ERROR_STOP=1 -U music_app -d music_player
 Get-Content -Raw -Encoding utf8 .\database\checks\user_profile_relationship.sql | docker compose exec -T db psql -v ON_ERROR_STOP=1 -U music_app -d music_player
+Get-Content -Raw -Encoding utf8 .\database\checks\active_subscription.sql | docker compose exec -T db psql -v ON_ERROR_STOP=1 -U music_app -d music_player
+Get-Content -Raw -Encoding utf8 .\database\checks\audio_metadata.sql | docker compose exec -T db psql -v ON_ERROR_STOP=1 -U music_app -d music_player
+Get-Content -Raw -Encoding utf8 .\database\checks\published_audio_metadata.sql | docker compose exec -T db psql -v ON_ERROR_STOP=1 -U music_app -d music_player
 ~~~
 
-Mong đợi **NOTICE: PASS: ...**, **ROLLBACK**, không có ERROR. 
+Mong đợi **NOTICE: PASS: ...**, **ROLLBACK**, không có ERROR.
 
 ## 4. Build và chạy Android
 
@@ -226,34 +230,26 @@ Kiểm tra sau khi project build được:
 
 ## 5. MinIO và backend
 
-### 5.1. MinIO trên Windows
+### 5.1. MinIO Docker và seed nhạc demo
 
-Theo thiết kế, MinIO chạy riêng, ngoài Compose hiện tại. Chuẩn bị executable theo [hướng dẫn MinIO trên Windows](https://minio.community/community/minio-object-store/operations/deployments/baremetal-deploy-minio-on-windows.html), ví dụ đặt tại D:\Online-music-player\tools\minio.exe.
-
-Mở PowerShell riêng, giữ terminal mở:
+Image AIStor đã tải cần file license hợp lệ và command `server /data`. Chạy tại **D:\MobileAppPrj**:
 
 ~~~powershell
-Set-Location D:\Online-music-player
-New-Item -ItemType Directory -Force -Path .\runtime\minio-data | Out-Null
-$env:MINIO_ROOT_USER = 'music_minio_local'
-$env:MINIO_ROOT_PASSWORD = '<MAT_KHAU_RIENG_IT_NHAT_8_KY_TU>'
-.\tools\minio.exe server .\runtime\minio-data --address '127.0.0.1:9000' --console-address '127.0.0.1:9001'
+Set-Location D:\MobileAppPrj
+Set-ExecutionPolicy -Scope Process Bypass
+.\scripts\Setup-Minio.ps1 -LicensePath D:\minio.license
+.\scripts\Seed-DemoMusic.ps1
 ~~~
 
-Thay password trước khi chạy. tools/minio.exe và runtime/minio-data là vị trí minh họa chưa có sẵn; không commit executable, runtime hoặc credential.
+Setup tự tạo `storage/.env` chứa `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`, giữ tài khoản và volume khi chạy lại. Mở [Console local](http://localhost:9001), đọc hai giá trị trong file này để đăng nhập. **9000 là S3 API**, **9001 là Console**. Credential được đặt khi tạo container, không đặt trên image trong danh sách Images.
 
-Với bản có Console, mở [Console local](http://127.0.0.1:9001), đăng nhập bằng tài khoản trên. Nếu bản cài có công cụ quản trị khác, dùng công cụ của bản đó.
+Seed tải **50 MP3 thật của Kevin MacLeod theo CC BY 4.0**, lưu vào bucket private `music-demo`, kiểm SHA-256, MIME, kích thước và HTTP Range, rồi ghi track `published` cùng `track_audio_metadata` trong một transaction. V8 kiểm tra metadata tại cuối transaction; fixture draft cũ vẫn giữ nguyên. Script cũng tạo credential backend chỉ đọc trong `storage/backend.env`.
 
-1. Tạo bucket private, ví dụ **music-player**; tên đề xuất này phải khớp backend.
-2. Upload audio/ảnh hợp pháp.
-3. Object key phải khớp DB, ví dụ **demo/audio/track-1.mp3**, hoặc cập nhật DB theo key thực tế.
-4. Cập nhật duration_seconds, file_size_bytes, mime_type, bitrate và cover key nếu có. Chỉ sau khi object tồn tại mới đặt track **status='published', published_at=now()**.
-
-Cổng **9000 là S3 API**, **9001 là Console**. Backend đọc bucket private và proxy stream; Android không dùng credential storage.
+Xem [hướng dẫn cài đặt, mapping metadata, kiểm tra và ghi công](documents/minio-demo-setup.md). Khi tích hợp ứng dụng, phải hiển thị credit cho người nghe; backend và giao diện playback/credits vẫn cần triển khai.
 
 ### 5.2. Backend Spring Boot
 
-Backend cần REST API, PostgreSQL/Flyway, MinIO adapter và HTTP Range. Đóng gói **V1–V5 nguyên nội dung** từ database/migrations vào src/main/resources/db/migration/ hoặc dùng cùng nguồn SQL trong build. Compose/backend cùng kiểm tra flyway_schema_history.
+Backend cần REST API, PostgreSQL/Flyway, MinIO adapter và HTTP Range. Đóng gói **V1–V8 nguyên nội dung** từ D:\MobileAppPrj\database\migrations vào src/main/resources/db/migration/ hoặc dùng cùng nguồn SQL trong build. Compose/backend cùng kiểm tra flyway_schema_history.
 
 Cấu hình datasource mẫu trong application.properties:
 
@@ -268,7 +264,7 @@ spring.flyway.enabled=true
 
 Nếu dùng JPA, giữ Hibernate **validate**, Flyway quản lý schema. Nếu backend chạy trong Compose, datasource dùng **db:5432**.
 
-Cần thêm cấu hình backend thực tế cho MinIO endpoint **http://127.0.0.1:9000**, bucket/access key/secret key; JWT HS256; Actuator và log. Repo chưa định nghĩa tên property/biến môi trường storage/JWT, phải lấy từ implementation sau này.
+Cấu hình MinIO cho backend có trong `storage/backend.env` và mẫu `storage/application-storage.example.yaml`; cần triển khai binding `storage` và MinioClient trong Spring Boot. JWT HS256, Actuator, REST API và HTTP Range proxy vẫn cần implementation. Android không nhận credential storage.
 
 Khi nhóm đã build executable JAR, mở PowerShell riêng. Ví dụ file nhóm cung cấp tên backend\music-player-backend.jar:
 
@@ -362,8 +358,8 @@ Android mặc định chặn HTTP cleartext với app target API 28 trở lên t
 
 Sau khi hoàn thiện phần thiếu:
 
-1. **Docker Desktop → PostgreSQL → Flyway**: healthy, V1–V5 thành công.
-2. **MinIO**: bucket/audio thật, object key khớp DB.
+1. **Docker Desktop → PostgreSQL → Flyway** tại MobileAppPrj: healthy, V1–V8 thành công.
+2. **MinIO**: chạy Setup-Minio.ps1 và Seed-DemoMusic.ps1; 50 audio CC BY 4.0, object key khớp DB.
 3. **Backend**: DB/MinIO kết nối được, health UP, API trên 8080.
 4. **Android**: resource đầy đủ, BASE_URL/quyền network đúng, build debug và chạy.
 5. **Đăng ký tài khoản và kiểm thử xuyên suốt**.
@@ -382,7 +378,7 @@ Checklist mục tiêu demo:
 
 ## 8. Dừng, chạy lại, backup
 
-Chạy tại D:\Online-music-player:
+Chạy tại D:\MobileAppPrj:
 
 ~~~powershell
 docker compose ps -a
@@ -396,7 +392,7 @@ docker compose run --rm migrate
 docker compose down
 ~~~
 
-Backend/MinIO: **Ctrl+C** ở terminal tương ứng. Dừng app bằng IDE/thiết bị.
+MinIO: `docker compose --env-file storage/.env -f compose.minio.yaml stop`. Backend chạy foreground: **Ctrl+C** ở terminal tương ứng. Dừng app bằng IDE/thiết bị.
 
 **Chỉ khi chủ động muốn xóa sạch DB test**:
 
@@ -404,7 +400,7 @@ Backend/MinIO: **Ctrl+C** ở terminal tương ứng. Dừng app bằng IDE/thi�
 docker compose down -v
 ~~~
 
-down -v xóa volume PostgreSQL và dữ liệu; lần sau phải tạo schema/seed/tài khoản lại. Không xóa thư mục MinIO chạy riêng.
+down -v xóa volume PostgreSQL và dữ liệu; lần sau phải tạo schema/seed/tài khoản lại. Volume MinIO thuộc Compose riêng `compose.minio.yaml`; không dùng `down -v` trên Compose đó khi muốn giữ audio.
 
 Backup binary an toàn trên PowerShell: dump trong container rồi copy ra.
 
@@ -463,9 +459,9 @@ Nếu nhóm chỉ gọi backend leader, giữ DB/MinIO localhost, chỉ mở 808
 - [Phạm vi dự án](../Online-music-player/documents/online-music-player-project-brief.md).
 - [Kiến trúc, luồng và API đề xuất](../Online-music-player/documents/mobile-system-architecture-and-flows.md).
 - [Thiết kế database](../Online-music-player/documents/database-design.md).
-- [Hướng dẫn database gốc](../Online-music-player/database.md).
-- [Compose](../Online-music-player/compose.yaml).
+- [Hướng dẫn database hiện tại](database.md).
+- [Compose PostgreSQL](compose.yaml).
+- [MinIO, metadata mapping và seed nhạc CC BY 4.0](documents/minio-demo-setup.md).
 - [Android build](../Online-music-player/app/build.gradle.kts).
 - [Version catalog](../Online-music-player/gradle/libs.versions.toml).
 - [Gradle Wrapper](../Online-music-player/gradle/wrapper/gradle-wrapper.properties).
-
