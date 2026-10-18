@@ -1,0 +1,302 @@
+{
+  "incompetech-usuan1100482": {
+    "sha256": "f598c8ee624f1db9a2cd38886524a40baff4ce730dcf999c0763791268fa8265",
+    "file_size_bytes": 3316821,
+    "duration_seconds": 81,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan2000020": {
+    "sha256": "64b13f986f69b2054c44562f7795be14c09d600c8052cc5bf2346ea109af0bc8",
+    "file_size_bytes": 2838630,
+    "duration_seconds": 142,
+    "bitrate_kbps": 160
+  },
+  "incompetech-usuan1800005": {
+    "sha256": "e03bc2d89a1913ba68d120c806141952bea09d93cf11fcc0cac7c2d378014d13",
+    "file_size_bytes": 5195810,
+    "duration_seconds": 163,
+    "bitrate_kbps": 256
+  },
+  "incompetech-usuan1900001": {
+    "sha256": "6d24390bfe0dba5107b04d643c2e36e13dae8048a382d465f0b575397f01b89b",
+    "file_size_bytes": 7116717,
+    "duration_seconds": 178,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100626": {
+    "sha256": "670811ea9df5186d89161075dd20567c420fdea1cec3f28766dda575accdec8a",
+    "file_size_bytes": 7355998,
+    "duration_seconds": 184,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1600032": {
+    "sha256": "72f3a5b2086e0452f5f6f3b10c97e4b267f222ed4b9fc777de340efbcfc8f523",
+    "file_size_bytes": 6067663,
+    "duration_seconds": 190,
+    "bitrate_kbps": 256
+  },
+  "incompetech-usuan1700032": {
+    "sha256": "bddefba384d462e0e2d9b1d4111ea7fc8cee5a5a34e920f3366d8237a061e9c5",
+    "file_size_bytes": 6147912,
+    "duration_seconds": 193,
+    "bitrate_kbps": 256
+  },
+  "incompetech-usuan1100517": {
+    "sha256": "f1dda20ed1577c034644bf50209e7f216eb1ebb9cf4399fa4d34ebad2f8b935e",
+    "file_size_bytes": 8206216,
+    "duration_seconds": 202,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1400032": {
+    "sha256": "8cd93a36fb6e1f52ce96eca845597c8b5e86bd2dbfb8759669ba64fdebb4cbfc",
+    "file_size_bytes": 6683696,
+    "duration_seconds": 209,
+    "bitrate_kbps": 256
+  },
+  "incompetech-usuan1100493": {
+    "sha256": "8a3a6c4125c5f80b75cf65230b0a64d91d7dbc4969460af1b1ba314bf69eebbf",
+    "file_size_bytes": 2482004,
+    "duration_seconds": 60,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100347": {
+    "sha256": "2c92107d1df98ac337cc89db54149e75b6e9a3b3439872b921bab49fb428246f",
+    "file_size_bytes": 2201169,
+    "duration_seconds": 53,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100295": {
+    "sha256": "1d6ced748f95a737cf01d203445dae780dad9440a10e32506d5cbc6c96cbfab7",
+    "file_size_bytes": 3282358,
+    "duration_seconds": 86,
+    "bitrate_kbps": 299
+  },
+  "incompetech-usuan1100608": {
+    "sha256": "7ba49087e5354715d1ce7882cee46dc52008d8858bf8fce0cf87b4616d96ec88",
+    "file_size_bytes": 3611753,
+    "duration_seconds": 88,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100093": {
+    "sha256": "6c8b7e4282d72764f62f3996fd2d441e5be2ca1d75529f81b8a49af6ca2f3a2c",
+    "file_size_bytes": 4076060,
+    "duration_seconds": 100,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100791": {
+    "sha256": "954195ebb05e3aa58ac30ff060cb42cb6741a0b6fabea5df8876ac2bbe93f4b9",
+    "file_size_bytes": 4709391,
+    "duration_seconds": 118,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100669": {
+    "sha256": "c3166f96a378a943bc9702aaff18af1d86e940bbebb5333f193bc0b57f99abd6",
+    "file_size_bytes": 4708227,
+    "duration_seconds": 118,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1700018": {
+    "sha256": "932424252801c51a6385c1339ebb57571cee76eda6431eaa338dcacb677c4d94",
+    "file_size_bytes": 3934390,
+    "duration_seconds": 123,
+    "bitrate_kbps": 256
+  },
+  "incompetech-usuan1100094": {
+    "sha256": "a56fe686900e20c75e3ec02c191338a9f4a69f11808677959e687f46b2e32054",
+    "file_size_bytes": 5325409,
+    "duration_seconds": 131,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100280": {
+    "sha256": "f5576530bba162b4f2cfc85b674a717d1b77d2cc908573c595879a367b0def92",
+    "file_size_bytes": 5592090,
+    "duration_seconds": 137,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100221": {
+    "sha256": "f7d2be0f03fefea2b33851cb67c2d4a5d57daebcad2aedc85850e531d941960f",
+    "file_size_bytes": 5706366,
+    "duration_seconds": 140,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100202": {
+    "sha256": "b8ffccb85d145b00d39505fcd405a27a7b632af153db54862511209c2232cdc5",
+    "file_size_bytes": 2108107,
+    "duration_seconds": 51,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100281": {
+    "sha256": "731144eb7b076d06a19dd249d4683cf2213066a5661108267739d2d94d85c7c2",
+    "file_size_bytes": 3165069,
+    "duration_seconds": 77,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100124": {
+    "sha256": "f53739850ae3fcc434d4586e00d6d775da73b90fb0e95bf794f5d2faa4e2c18b",
+    "file_size_bytes": 4208885,
+    "duration_seconds": 103,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100128": {
+    "sha256": "34e001a11996c2125ce02b548bdba13b7b9987e453b6d888389503ecd0f035ad",
+    "file_size_bytes": 4021693,
+    "duration_seconds": 110,
+    "bitrate_kbps": 285
+  },
+  "incompetech-usuan1100083": {
+    "sha256": "96fa341ab594fd02bfaa7547aa5037dfe02c7db83c70c2b03a2c067a0c857219",
+    "file_size_bytes": 4699384,
+    "duration_seconds": 129,
+    "bitrate_kbps": 286
+  },
+  "incompetech-usuan1400029": {
+    "sha256": "f64025e2a3ed44e8d584e98385fe906759bcc32d7ffe7f133e0e339773647bc8",
+    "file_size_bytes": 4186817,
+    "duration_seconds": 131,
+    "bitrate_kbps": 256
+  },
+  "incompetech-usuan1100020": {
+    "sha256": "514aa7f49fe774bd64bdbd1fac2cfae945dd4de6c970e15deec2ae7e12ff4097",
+    "file_size_bytes": 5597832,
+    "duration_seconds": 144,
+    "bitrate_kbps": 305
+  },
+  "incompetech-usuan1300010": {
+    "sha256": "c0b120cb91a62468f5024162c8942dd2310696c076b6a1df2b88892350575b87",
+    "file_size_bytes": 6611177,
+    "duration_seconds": 166,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1500042": {
+    "sha256": "3b2c159f21abb801ef564c66739bdfc3f750ae49885253bc20204dd0feb7bea7",
+    "file_size_bytes": 5402295,
+    "duration_seconds": 169,
+    "bitrate_kbps": 256
+  },
+  "incompetech-usuan1600033": {
+    "sha256": "ef6aae97cd50a21b36e2a3694619ae2263c5630e40c68d3a43490425ccd2bf11",
+    "file_size_bytes": 5099663,
+    "duration_seconds": 160,
+    "bitrate_kbps": 256
+  },
+  "incompetech-usuan2100012": {
+    "sha256": "64acef868e26a9f4d9559c6ddee5e8e4c0890865a186069b49d30b99e6e81684",
+    "file_size_bytes": 3837543,
+    "duration_seconds": 192,
+    "bitrate_kbps": 160
+  },
+  "incompetech-usuan1200098": {
+    "sha256": "0e44ecffff5baff646b8ab3ae1a9588dd7d7230454b77c96393dce7eff4a643d",
+    "file_size_bytes": 7434578,
+    "duration_seconds": 186,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100777": {
+    "sha256": "a0c8baf3baccba8707468c654e75541d0d80d05ed8f2a0d0db81c820b2a92de1",
+    "file_size_bytes": 7013475,
+    "duration_seconds": 176,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100573": {
+    "sha256": "fe60cf5018b54edb93f9b5569bd1a3d08bc309aafb8b7d6a187116c1311e670c",
+    "file_size_bytes": 3033425,
+    "duration_seconds": 74,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100460": {
+    "sha256": "97fe8fe121a132b2a38c76ee311ae0b15045f47405b77a68ff2f2aa5d6d95a66",
+    "file_size_bytes": 3397239,
+    "duration_seconds": 85,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100431": {
+    "sha256": "65e1f442f589c09d51e399b36d01ce80dcd46a9ffb3c5d3875845746cf31e128",
+    "file_size_bytes": 3791841,
+    "duration_seconds": 93,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100787": {
+    "sha256": "8cba6bb3da51066ad39520ec218a327bb6222d8fb32bc52f28a1e90b67756f70",
+    "file_size_bytes": 7487656,
+    "duration_seconds": 188,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100625": {
+    "sha256": "e8e7797dcb7ac80431a4615c2598cf4532f76c4cc054b88a0ec3707ec857c5b1",
+    "file_size_bytes": 4800178,
+    "duration_seconds": 120,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100298": {
+    "sha256": "3eb1dd614883218142bb541f6d50bcd14bc8d1547f4d46b257a90878a998da7b",
+    "file_size_bytes": 5248689,
+    "duration_seconds": 129,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1900026": {
+    "sha256": "1f52f8d577c4ff6cc56c9acef25793c1d15c614dd2625f48772a9f4f63e8583d",
+    "file_size_bytes": 5895241,
+    "duration_seconds": 145,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan2300011": {
+    "sha256": "25470853676263801b044d22761e579a750db722aefbf1d8d48676f49f626184",
+    "file_size_bytes": 2979130,
+    "duration_seconds": 93,
+    "bitrate_kbps": 256
+  },
+  "incompetech-usuan2000025": {
+    "sha256": "9977d93c698abacc29e5da7ff0bccee2b8f6de47ed7e567cb0f1ed9b7564f74e",
+    "file_size_bytes": 2600392,
+    "duration_seconds": 130,
+    "bitrate_kbps": 160
+  },
+  "incompetech-usuan1900055": {
+    "sha256": "68ab5625f1b723d7fcfeaa47b44379fddc7bb5ffcc9d71017fabd07b5c2ca93a",
+    "file_size_bytes": 4937089,
+    "duration_seconds": 121,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1300017": {
+    "sha256": "844b9d89e1a48d51f04ce495db1ba743ee6c36856d0e39d43db393609bcb7aac",
+    "file_size_bytes": 4738790,
+    "duration_seconds": 119,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1200088": {
+    "sha256": "a8c77bcc296157b0a46a60ddf870f7e2c50f2273841907791c50cef662c71653",
+    "file_size_bytes": 5695952,
+    "duration_seconds": 143,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1200079": {
+    "sha256": "75227ad153780ee0c57ae529caa7f8a891877a46596ff8800a16c90b34b6d18c",
+    "file_size_bytes": 6644624,
+    "duration_seconds": 167,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1100825": {
+    "sha256": "9c14bdd7c0c8fab6182ff5f5acc743394666d5a3ba448ea49c04fe7cf8699a7e",
+    "file_size_bytes": 5377175,
+    "duration_seconds": 135,
+    "bitrate_kbps": 320
+  },
+  "incompetech-usuan1600051": {
+    "sha256": "b4439b5c329f23cd9a650e59c59b0023986e84eba812002dd4509e277e55d2c9",
+    "file_size_bytes": 4228614,
+    "duration_seconds": 133,
+    "bitrate_kbps": 256
+  },
+  "incompetech-usuan1500053": {
+    "sha256": "ed221535043229a020f0d64e9b12952b298fc2ad8d7ca41c77911d916cdc94be",
+    "file_size_bytes": 4755299,
+    "duration_seconds": 149,
+    "bitrate_kbps": 256
+  },
+  "incompetech-usuan1200112": {
+    "sha256": "218c16ae19cae3770452a7ba1c32d0976778fc5061616141a6dcbf7f96684c33",
+    "file_size_bytes": 6864453,
+    "duration_seconds": 170,
+    "bitrate_kbps": 320
+  }
+}
