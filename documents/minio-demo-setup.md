@@ -13,7 +13,7 @@ Image đã tải là **quay.io/minio/aistor/minio:RELEASE.2026-09-19T17-05-25Z**
 ## 2. Cài và chạy bằng PowerShell
 
 ```powershell
-Set-Location D:\MobileAppPrj
+Set-Location D:\Online-music-player
 Set-ExecutionPolicy -Scope Process Bypass
 .\scripts\Setup-Minio.ps1 -LicensePath D:\minio.license
 ```
@@ -45,7 +45,7 @@ Nếu muốn thao tác Docker Desktop: bấm **Run** của image → **Optional 
 ## 3. Seed 50 bản nhạc thật
 
 ```powershell
-Set-Location D:\MobileAppPrj
+Set-Location D:\Online-music-player
 .\scripts\Seed-DemoMusic.ps1
 ```
 
