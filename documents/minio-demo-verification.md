@@ -1,6 +1,6 @@
 # Kết quả kiểm tra MinIO và seed demo
 
-Kiểm tra trên máy local của dự án ngày **16/10/2026**, tại `D:\MobileAppPrj`.
+Kiểm tra trên máy local của dự án ngày **16/10/2026**, tại `D:\Online-music-player`.
 
 Cập nhật quy trình ngày **18/10/2026**: nguồn và giấy phép chỉ lưu liên kết cùng `license_code` và `attribution_text`; script không tải/lưu HTML. Các kết quả kiểm tra bên dưới vẫn ghi nhận lần chạy ngày 16/10/2026, không phải một lần kiểm tra runtime mới.
 
