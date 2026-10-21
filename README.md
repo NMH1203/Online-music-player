@@ -1,6 +1,6 @@
 # Online Music Player
 
-Repository này chứa ứng dụng Android đang ở giai đoạn giao diện mẫu, cấu hình PostgreSQL/Flyway và công cụ chuẩn bị nhạc demo trên MinIO. Mã nguồn backend và chức năng phát nhạc trong ứng dụng chưa có. Các lệnh bên dưới dành cho PowerShell trên Windows và chạy từ chính repository này.
+Repository này chứa ứng dụng Android giao diện mẫu, backend Spring Boot cho thư viện cơ bản, cấu hình PostgreSQL/Flyway và công cụ chuẩn bị nhạc demo trên MinIO. Auth, tích hợp Android với API và playback vẫn đang chờ các nhiệm vụ tiếp theo. Các lệnh bên dưới dành cho PowerShell trên Windows và chạy từ chính repository này.
 
 ## Hiện trạng
 
@@ -9,7 +9,8 @@ Repository này chứa ứng dụng Android đang ở giai đoạn giao diện m
 | Android | Một Activity, thanh điều hướng và bốn màn hình Home, Search, Library, Profile. Nội dung các màn hình hiện là placeholder. |
 | Dữ liệu | Docker Compose chạy PostgreSQL 16.13 và Flyway 11.20.2; migration V1–V8, SQL kiểm tra và fixture catalog. |
 | Lưu trữ nhạc | Compose MinIO AIStor riêng, script thiết lập và script tải/seed 50 MP3 demo có thông tin giấy phép. Cần license AIStor hợp lệ để chạy. |
-| Tích hợp | Chưa có backend, API client, đăng nhập, tìm kiếm thực, thư viện người dùng hoặc playback. Android chưa đọc dữ liệu từ PostgreSQL/MinIO. |
+| Backend | `backend/` có API yêu thích track/album và nền tảng playlist; T04 sẽ kết nối principal xác thực vào API. |
+| Tích hợp | Android chưa gọi API, chưa có đăng nhập, tìm kiếm thực hoặc playback. |
 
 Hai giá trị BASE_URL trong cấu hình Android hiện là địa chỉ mẫu và chưa được mã nguồn sử dụng. Manifest đã khai báo quyền Internet, notification và foreground service, nhưng ứng dụng chưa có media playback service. Tính năng dự kiến được mô tả trong [phạm vi dự án](documents/online-music-player-project-brief.md) và [thiết kế kiến trúc/API](documents/mobile-system-architecture-and-flows.md); đó chưa phải chức năng đã triển khai.
 
@@ -30,6 +31,23 @@ Online-music-player/
 ~~~
 
 Các file **.env**, **storage/.env**, **storage/backend.env**, **storage/minio.license**, môi trường Python và cache audio không được commit.
+
+## Backend API — Library foundation (T06)
+
+Backend source nằm trong `backend/`. Cần JDK 17 trở lên và PostgreSQL local từ Compose.
+Từ repository root, chạy database rồi build/chạy backend bằng Gradle Wrapper của dự án:
+
+~~~powershell
+docker compose up -d
+.\android\gradlew.bat -p .\backend bootJar
+.\android\gradlew.bat -p .\backend bootRun
+~~~
+
+API mặc định nghe tại `127.0.0.1:8080`. Có thể đặt `DB_URL`, `DB_USERNAME` và
+`DB_PASSWORD` trong môi trường trước khi chạy. Backend dùng các migration tại
+`database/migrations`; Compose vẫn là nơi thực thi Flyway. Danh sách endpoint và ranh
+giới tích hợp JWT được ghi trong [backend README](backend/README.md). API `/me/...`
+chỉ hoạt động sau khi T04 cấu hình principal có tên là UUID của user hiện tại.
 
 ## Chạy ứng dụng Android
 
