@@ -27,7 +27,7 @@ android {
         }
         release {
             buildConfigField("String", "BASE_URL", "\"https://api.musicplayer.com/\"")
-            isMinifyEnabled = true
+            isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -62,4 +62,21 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
+
+    // ... Giữ nguyên các dòng implementation cũ của dự án ở đây ...
+
+        // Thêm đoạn cấu hình xử lý xung đột này vào cuối khối:
+    constraints {
+            implementation("androidx.transition:transition:1.4.1") {
+                because("Xử lý xung đột trùng lặp phiên bản khi hạ AGP")
+            }
+    }
+
+
+}
+
+configurations.all {
+    resolutionStrategy {
+        force("androidx.transition:transition:1.4.1")
+    }
 }
