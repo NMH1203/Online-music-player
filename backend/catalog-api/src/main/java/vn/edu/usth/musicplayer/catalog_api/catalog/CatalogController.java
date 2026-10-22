@@ -1,4 +1,4 @@
-package vn.edu.usth.musicplayer.catalogapi.catalog;
+package vn.edu.usth.musicplayer.catalog_api.catalog;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
