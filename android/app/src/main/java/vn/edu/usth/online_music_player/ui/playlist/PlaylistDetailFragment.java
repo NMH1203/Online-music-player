@@ -15,8 +15,13 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import vn.edu.usth.online_music_player.MainActivity;
 import vn.edu.usth.online_music_player.R;
+import vn.edu.usth.online_music_player.data.playback.PlaybackRepository;
+import vn.edu.usth.online_music_player.data.playback.TrackPlayback;
 import vn.edu.usth.online_music_player.data.playlist.PlaylistDetail;
 import vn.edu.usth.online_music_player.data.playlist.PlaylistRepository;
 import vn.edu.usth.online_music_player.data.playlist.PlaylistTrack;
@@ -27,6 +32,7 @@ import vn.edu.usth.online_music_player.databinding.ItemPlaylistTrackBinding;
 public class PlaylistDetailFragment extends Fragment {
     private FragmentPlaylistDetailBinding binding;
     private final PlaylistRepository repository = new PlaylistRepository();
+    private final PlaybackRepository playbackRepository = new PlaybackRepository();
     private String playlistId;
     private PlaylistDetail playlist;
 
@@ -62,6 +68,7 @@ public class PlaylistDetailFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        playbackRepository.cancelAll();
         binding = null;
         super.onDestroyView();
     }
@@ -132,10 +139,46 @@ public class PlaylistDetailFragment extends Fragment {
             row.playlistTrackTitle.setText(track.getTitle());
             row.playlistTrackArtist.setText(trackSubtitle(track));
             row.playlistTrackRemove.setOnClickListener(ignored -> removeTrack(track));
-            row.getRoot().setOnClickListener(ignored -> showMessage(
-                    getString(R.string.playlist_playback_not_ready)));
+            final int trackIndex = index;
+            row.getRoot().setOnClickListener(ignored -> playFromPlaylist(trackIndex));
             binding.playlistTracks.addView(row.getRoot());
         }
+    }
+
+    private void playFromPlaylist(int startIndex) {
+        if (playlist == null || startIndex < 0 || startIndex >= playlist.getTracks().size()) {
+            return;
+        }
+        List<String> trackIds = new ArrayList<>();
+        for (PlaylistTrack track : playlist.getTracks()) {
+            if (track == null || !hasText(track.getId())) {
+                showMessage(getString(R.string.playlist_playback_failed));
+                return;
+            }
+            trackIds.add(track.getId());
+        }
+
+        showMessage(getString(R.string.playlist_playback_loading));
+        playbackRepository.loadQueue(trackIds, new PlaybackRepository.QueueCallback() {
+            @Override
+            public void onLoaded(List<TrackPlayback> tracks) {
+                if (binding == null || !isAdded()) {
+                    return;
+                }
+                ((MainActivity) requireActivity()).playQueue(tracks, startIndex);
+                showMessage(getString(R.string.playlist_playback_started));
+            }
+
+            @Override
+            public void onFailed(PlaybackRepository.FailureType failureType) {
+                if (binding == null || !isAdded()) {
+                    return;
+                }
+                showMessage(failureType == PlaybackRepository.FailureType.AUTHENTICATION_REQUIRED
+                        ? getString(R.string.library_sign_in_again)
+                        : getString(R.string.playlist_playback_failed));
+            }
+        });
     }
 
     private String trackSubtitle(PlaylistTrack track) {

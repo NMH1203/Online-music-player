@@ -20,6 +20,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("io.minio:minio:9.0.3")
     runtimeOnly("org.postgresql:postgresql")
 }
 

@@ -58,7 +58,9 @@
     <string name="playlist_selected_count">Đã chọn %1$d bài</string>
     <string name="playlist_add_selected">Thêm bài đã chọn</string>
     <string name="playlist_no_tracks">Chưa có bài hát phù hợp.</string>
-    <string name="playlist_playback_not_ready">Trình phát và luồng âm thanh của nhóm chưa được tích hợp; phần này thuộc T08/T16.</string>
+    <string name="playlist_playback_loading">Đang chuẩn bị hàng chờ phát…</string>
+    <string name="playlist_playback_started">Đang phát playlist.</string>
+    <string name="playlist_playback_failed">Không tải được thông tin phát nhạc. Hãy kiểm tra backend và thử lại.</string>
     <string name="playlist_generic_error">Không thể hoàn tất thao tác. Hãy thử lại.</string>
     <string name="playlist_auth_required">Bạn cần đăng nhập để quản lý playlist.</string>
     <string name="playlist_network_error">Không kết nối được máy chủ. Kiểm tra backend rồi thử lại.</string>
