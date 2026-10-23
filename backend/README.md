@@ -41,11 +41,15 @@ filter is integrated, requests without an authenticated principal receive `401`.
 | GET | `/me/playlists` | List the current user's playlists |
 | POST | `/me/playlists` | Create a private playlist |
 | GET | `/me/playlists/{playlistId}` | Read an owned playlist and its tracks |
+| PUT | `/me/playlists/{playlistId}` | Rename an owned playlist and update its description |
+| DELETE | `/me/playlists/{playlistId}` | Delete an owned playlist and its tracks |
 | POST | `/me/playlists/{playlistId}/tracks/{trackId}` | Add a track once, at the end |
 | DELETE | `/me/playlists/{playlistId}/tracks/{trackId}` | Remove a track from an owned playlist |
+| GET | `/tracks?query=...` | Search published track metadata for playlist selection |
 
-Playlist rename/delete and the Android playlist flow remain for T20. Playlist quota is
-handled by the separate entitlement task. The database primary keys and `ON CONFLICT`
-writes prevent duplicate favorites and duplicate tracks in a playlist.
+Playlist quota is handled by the separate entitlement task. The database primary keys and
+`ON CONFLICT` writes prevent duplicate favorites and duplicate tracks in a playlist. The
+track catalog response intentionally contains metadata only; audio streaming and Android
+playback remain in the playback tasks.
 
 Errors use the shared `code`, `message`, `details`, and `request_id` response envelope.

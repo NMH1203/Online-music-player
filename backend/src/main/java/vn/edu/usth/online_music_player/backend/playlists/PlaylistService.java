@@ -71,9 +71,35 @@ public class PlaylistService {
     }
 
     @Transactional
+    public PlaylistSummaryResponse updatePlaylist(
+            UUID userId, UUID playlistId, UpdatePlaylistRequest request) {
+        lockOwnedPlaylist(userId, playlistId);
+        String description = request.description();
+        if (description != null) {
+            description = description.isBlank() ? null : description.trim();
+        }
+        jdbcTemplate.update(
+                "UPDATE playlists SET name = ?, description = ? WHERE user_id = ? AND id = ?",
+                request.name().trim(),
+                description,
+                userId,
+                playlistId);
+        return findOwnedPlaylist(userId, playlistId);
+    }
+
+    @Transactional
+    public void deletePlaylist(UUID userId, UUID playlistId) {
+        lockOwnedPlaylist(userId, playlistId);
+        jdbcTemplate.update(
+                "DELETE FROM playlists WHERE user_id = ? AND id = ?", userId, playlistId);
+    }
+
+    @Transactional
     public void addTrack(UUID userId, UUID playlistId, UUID trackId) {
         lockOwnedPlaylist(userId, playlistId);
-        if (!exists("SELECT EXISTS (SELECT 1 FROM tracks WHERE id = ?)", trackId)) {
+        if (!exists(
+                "SELECT EXISTS (SELECT 1 FROM tracks WHERE id = ? AND status = 'published')",
+                trackId)) {
             throw new ApiException(HttpStatus.NOT_FOUND, "not_found", "Không tìm thấy bài hát.");
         }
 

@@ -1,6 +1,6 @@
 # Online Music Player
 
-Repository này chứa ứng dụng Android, backend Spring Boot cho thư viện cơ bản, cấu hình PostgreSQL/Flyway và công cụ chuẩn bị nhạc demo trên MinIO. Màn Library đã đọc favorites và playlist từ API; đăng nhập, các màn còn lại và playback vẫn đang được triển khai. Các lệnh bên dưới dành cho PowerShell trên Windows và chạy từ chính repository này.
+Repository này chứa ứng dụng Android, backend Spring Boot cho Library/Favorites/Playlist, cấu hình PostgreSQL/Flyway và công cụ chuẩn bị nhạc demo trên MinIO. Library đọc favorites và playlist từ API; luồng playlist đã có tạo, xem chi tiết, sửa/xóa playlist và chọn bài để thêm. Đăng nhập, luồng phát nhạc và một số màn catalog vẫn đang được triển khai. Các lệnh bên dưới dành cho PowerShell trên Windows và chạy từ chính repository này.
 
 ## Hiện trạng
 
@@ -10,7 +10,7 @@ Repository này chứa ứng dụng Android, backend Spring Boot cho thư viện
 | Dữ liệu | Docker Compose chạy PostgreSQL 16.13 và Flyway 11.20.2; migration V1–V8, SQL kiểm tra và fixture catalog. |
 | Lưu trữ nhạc | Compose MinIO AIStor riêng, script thiết lập và script tải/seed 50 MP3 demo có thông tin giấy phép. Cần license AIStor hợp lệ để chạy. |
 | Backend | `backend/` có API yêu thích track/album và nền tảng playlist; T04 sẽ kết nối principal xác thực vào API. |
-| Tích hợp | Library gọi API T06 bằng Retrofit. Access token chỉ giữ trong RAM; T04 cần nối luồng đăng nhập vào `AccessTokenStore`. Tìm kiếm và playback chưa tích hợp. |
+| Tích hợp | Library/Playlist gọi API bằng Retrofit. Access token chỉ giữ trong RAM; T04 cần nối luồng đăng nhập vào `AccessTokenStore`. Phát nhạc cần T08/T16. |
 
 Debug Android trỏ tới backend chạy trên máy host qua `10.0.2.2:8080`; bản release vẫn dùng URL mẫu. Manifest đã khai báo quyền Internet, notification và foreground service, nhưng ứng dụng chưa có media playback service. Tính năng dự kiến được mô tả trong [phạm vi dự án](documents/online-music-player-project-brief.md) và [thiết kế kiến trúc/API](documents/mobile-system-architecture-and-flows.md); một số phần vẫn chưa được triển khai.
 

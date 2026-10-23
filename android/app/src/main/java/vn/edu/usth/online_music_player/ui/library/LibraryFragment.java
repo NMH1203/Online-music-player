@@ -3,17 +3,22 @@ package vn.edu.usth.online_music_player.ui.library;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.text.InputFilter;
+import android.text.InputType;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.EditText;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 import java.util.List;
 import java.util.Locale;
@@ -23,6 +28,7 @@ import vn.edu.usth.online_music_player.data.library.FavoriteTrack;
 import vn.edu.usth.online_music_player.data.library.LibraryContent;
 import vn.edu.usth.online_music_player.data.library.LibraryRepository;
 import vn.edu.usth.online_music_player.data.library.PlaylistSummary;
+import vn.edu.usth.online_music_player.data.playlist.PlaylistRepository;
 import vn.edu.usth.online_music_player.databinding.FragmentLibraryBinding;
 import vn.edu.usth.online_music_player.databinding.ItemLibraryEntryBinding;
 
@@ -49,6 +55,7 @@ public class LibraryFragment extends Fragment {
                 ContextCompat.getColor(requireContext(), R.color.accent_primary));
         binding.libraryRefresh.setOnRefreshListener(viewModel::refresh);
         binding.libraryRetry.setOnClickListener(ignored -> viewModel.refresh());
+        binding.createPlaylistButton.setOnClickListener(ignored -> showCreatePlaylistDialog());
         viewModel.getState().observe(getViewLifecycleOwner(), this::render);
     }
 
@@ -161,8 +168,115 @@ public class LibraryFragment extends Fragment {
                         ? playlist.getDescription()
                         : getString(R.string.library_playlist_track_count, playlist.getTrackCount());
                 View row = createEntry(playlist.getName(), subtitle, null, false, null);
+                row.setClickable(true);
+                row.setFocusable(true);
+                row.setOnClickListener(ignored -> openPlaylist(playlist));
                 binding.playlistsList.addView(row);
             }
+        }
+    }
+
+    private void showCreatePlaylistDialog() {
+        LinearLayout form = new LinearLayout(requireContext());
+        form.setOrientation(LinearLayout.VERTICAL);
+        int horizontalPadding = dp(24);
+        form.setPadding(horizontalPadding, dp(8), horizontalPadding, 0);
+
+        EditText nameInput = new EditText(requireContext());
+        nameInput.setSingleLine(true);
+        nameInput.setHint(R.string.playlist_name_hint);
+        nameInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        nameInput.setFilters(new InputFilter[]{new InputFilter.LengthFilter(200)});
+        form.addView(nameInput, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        EditText descriptionInput = new EditText(requireContext());
+        descriptionInput.setHint(R.string.playlist_description_hint);
+        descriptionInput.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        descriptionInput.setMinLines(2);
+        descriptionInput.setFilters(new InputFilter[]{new InputFilter.LengthFilter(2000)});
+        LinearLayout.LayoutParams descriptionParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        descriptionParams.topMargin = dp(8);
+        form.addView(descriptionInput, descriptionParams);
+
+        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.playlist_create_title)
+                .setView(form)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.playlist_create, null)
+                .create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(
+                androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(button -> {
+            String name = nameInput.getText() == null ? "" : nameInput.getText().toString().trim();
+            String description = descriptionInput.getText() == null
+                    ? "" : descriptionInput.getText().toString().trim();
+            if (name.isEmpty()) {
+                nameInput.setError(getString(R.string.playlist_name_required));
+                nameInput.requestFocus();
+                return;
+            }
+
+            PlaylistRepository repository = new PlaylistRepository();
+            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+            repository.createPlaylist(name, description, new PlaylistRepository.ResultCallback<PlaylistSummary>() {
+                @Override
+                public void onSuccess(PlaylistSummary created) {
+                    dialog.dismiss();
+                    if (!isAdded() || binding == null || getView() == null) {
+                        return;
+                    }
+                    if (created == null || !hasText(created.getId())) {
+                        showMessage(getString(R.string.playlist_generic_error));
+                        return;
+                    }
+                    Bundle args = new Bundle();
+                    args.putString("playlistId", created.getId());
+                    Navigation.findNavController(requireView())
+                            .navigate(R.id.playlist_detail_fragment, args);
+                }
+
+                @Override
+                public void onFailure(PlaylistRepository.FailureType failureType) {
+                    if (!isAdded() || binding == null) {
+                        return;
+                    }
+                    dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+                            .setEnabled(true);
+                    showMessage(messageFor(failureType));
+                }
+            });
+        }));
+        dialog.show();
+    }
+
+    private void openPlaylist(PlaylistSummary playlist) {
+        if (playlist == null || !hasText(playlist.getId()) || getView() == null) {
+            return;
+        }
+        Bundle args = new Bundle();
+        args.putString("playlistId", playlist.getId());
+        Navigation.findNavController(requireView()).navigate(R.id.playlist_detail_fragment, args);
+    }
+
+    private String messageFor(PlaylistRepository.FailureType failureType) {
+        if (failureType == PlaylistRepository.FailureType.AUTHENTICATION_REQUIRED) {
+            return getString(R.string.playlist_auth_required);
+        }
+        if (failureType == PlaylistRepository.FailureType.NETWORK) {
+            return getString(R.string.playlist_network_error);
+        }
+        if (failureType == PlaylistRepository.FailureType.NOT_FOUND) {
+            return getString(R.string.playlist_not_found);
+        }
+        return getString(R.string.playlist_generic_error);
+    }
+
+    private void showMessage(String message) {
+        if (binding != null) {
+            Snackbar.make(binding.getRoot(), message, Snackbar.LENGTH_LONG).show();
         }
     }
 
