@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -41,6 +42,15 @@ public class PlaylistService {
                 userId);
     }
 
+    public PlaylistQuotaResponse getPlaylistQuota(UUID userId) {
+        Integer maxPlaylists = findMaxPlaylists(userId);
+        long playlistCount = countPlaylists(userId);
+        return new PlaylistQuotaResponse(
+                playlistCount,
+                maxPlaylists,
+                maxPlaylists == null || playlistCount < maxPlaylists);
+    }
+
     public PlaylistDetailResponse getPlaylist(UUID userId, UUID playlistId) {
         PlaylistSummaryResponse playlist = findOwnedPlaylist(userId, playlistId);
         List<PlaylistTrackResponse> tracks = listTracks(playlistId);
@@ -55,6 +65,21 @@ public class PlaylistService {
 
     @Transactional
     public PlaylistSummaryResponse createPlaylist(UUID userId, CreatePlaylistRequest request) {
+        // Serialize playlist creation for one account so concurrent requests cannot exceed
+        // the plan's quota after both observe the same count.
+        lockUser(userId);
+        PlaylistQuotaResponse quota = getPlaylistQuota(userId);
+        if (!quota.canCreatePlaylist()) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "playlist_limit_reached",
+                    "Gói hiện tại đã đạt giới hạn playlist.",
+                    Map.of(
+                            "playlistCount", quota.playlistCount(),
+                            "maxPlaylists", quota.maxPlaylists(),
+                            "requiresPremium", true));
+        }
+
         UUID playlistId = UUID.randomUUID();
         String description = request.description();
         if (description != null) {
@@ -68,6 +93,42 @@ public class PlaylistService {
                 request.name().trim(),
                 description);
         return findOwnedPlaylist(userId, playlistId);
+    }
+
+    private Integer findMaxPlaylists(UUID userId) {
+        List<PlanLimit> plans = jdbcTemplate.query(
+                """
+                SELECT p.max_playlists
+                FROM subscriptions s
+                JOIN plans p ON p.id = s.plan_id
+                WHERE s.user_id = ? AND s.status = 'active'
+                """,
+                (resultSet, rowNumber) ->
+                        new PlanLimit((Integer) resultSet.getObject("max_playlists")),
+                userId);
+        if (plans.isEmpty()) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "active_subscription_required",
+                    "Tài khoản chưa có gói sử dụng đang hoạt động.");
+        }
+        return plans.get(0).maxPlaylists();
+    }
+
+    private long countPlaylists(UUID userId) {
+        Long count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM playlists WHERE user_id = ?", Long.class, userId);
+        return count == null ? 0 : count;
+    }
+
+    private void lockUser(UUID userId) {
+        List<UUID> users = jdbcTemplate.query(
+                "SELECT id FROM users WHERE id = ? FOR UPDATE",
+                (resultSet, rowNumber) -> resultSet.getObject("id", UUID.class),
+                userId);
+        if (users.isEmpty()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "user_not_found", "Không tìm thấy tài khoản.");
+        }
     }
 
     @Transactional
@@ -214,4 +275,6 @@ public class PlaylistService {
     private static Instant toInstant(OffsetDateTime value) {
         return value == null ? null : value.toInstant();
     }
+
+    private record PlanLimit(Integer maxPlaylists) {}
 }

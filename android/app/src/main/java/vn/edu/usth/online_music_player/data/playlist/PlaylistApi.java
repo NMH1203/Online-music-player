@@ -18,6 +18,9 @@ public interface PlaylistApi {
     @POST("me/playlists")
     Call<PlaylistSummary> createPlaylist(@Body PlaylistWriteRequest request);
 
+    @GET("me/playlists/quota")
+    Call<PlaylistQuota> getPlaylistQuota();
+
     @GET("me/playlists/{playlistId}")
     Call<PlaylistDetail> getPlaylist(@Path("playlistId") String playlistId);
 

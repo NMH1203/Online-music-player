@@ -1,7 +1,10 @@
 package vn.edu.usth.online_music_player.data.playlist;
 
 import java.util.ArrayList;
+import java.io.IOException;
 import java.util.List;
+import org.json.JSONException;
+import org.json.JSONObject;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -11,6 +14,7 @@ import vn.edu.usth.online_music_player.data.network.ApiClient;
 public final class PlaylistRepository {
     public enum FailureType {
         AUTHENTICATION_REQUIRED,
+        PLAYLIST_LIMIT_REACHED,
         NOT_FOUND,
         NETWORK,
         SERVER
@@ -30,6 +34,10 @@ public final class PlaylistRepository {
     public void createPlaylist(
             String name, String description, ResultCallback<PlaylistSummary> callback) {
         enqueue(api.createPlaylist(new PlaylistWriteRequest(name, description)), callback);
+    }
+
+    public void getPlaylistQuota(ResultCallback<PlaylistQuota> callback) {
+        enqueue(api.getPlaylistQuota(), callback);
     }
 
     public void updatePlaylist(
@@ -88,7 +96,7 @@ public final class PlaylistRepository {
                 if (response.isSuccessful()) {
                     callback.onSuccess(response.body());
                 } else {
-                    callback.onFailure(classify(response.code()));
+                    callback.onFailure(classify(response));
                 }
             }
 
@@ -101,12 +109,23 @@ public final class PlaylistRepository {
         });
     }
 
-    private static FailureType classify(int responseCode) {
+    private static FailureType classify(Response<?> response) {
+        int responseCode = response.code();
         if (responseCode == 401) {
             return FailureType.AUTHENTICATION_REQUIRED;
         }
         if (responseCode == 404) {
             return FailureType.NOT_FOUND;
+        }
+        if (responseCode == 409 && response.errorBody() != null) {
+            try {
+                JSONObject error = new JSONObject(response.errorBody().string());
+                if ("playlist_limit_reached".equals(error.optString("code"))) {
+                    return FailureType.PLAYLIST_LIMIT_REACHED;
+                }
+            } catch (IOException | JSONException ignored) {
+                // Keep the generic server state when the error envelope is missing or invalid.
+            }
         }
         return FailureType.SERVER;
     }

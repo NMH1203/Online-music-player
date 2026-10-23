@@ -39,6 +39,7 @@ filter is integrated, requests without an authenticated principal receive `401`.
 | PUT | `/me/library/albums/{albumId}` | Favorite an album; repeating the request is safe |
 | DELETE | `/me/library/albums/{albumId}` | Remove an album favorite |
 | GET | `/me/playlists` | List the current user's playlists |
+| GET | `/me/playlists/quota` | Read the current user's active-plan playlist limit and usage |
 | POST | `/me/playlists` | Create a private playlist |
 | GET | `/me/playlists/{playlistId}` | Read an owned playlist and its tracks |
 | PUT | `/me/playlists/{playlistId}` | Rename an owned playlist and update its description |
@@ -49,8 +50,12 @@ filter is integrated, requests without an authenticated principal receive `401`.
 | GET | `/tracks/{trackId}/playback` | Read published-track metadata and its backend stream route |
 | GET | `/tracks/{trackId}/stream` | Proxy the private MinIO audio object; supports one byte range per request |
 
-Playlist quota is handled by the separate entitlement task. The database primary keys and
-`ON CONFLICT` writes prevent duplicate favorites and duplicate tracks in a playlist. The
+Playlist creation checks the current user's active plan. Free accounts may create at most
+three playlists; a `409 playlist_limit_reached` response includes the current count and limit.
+Premium uses a null plan limit, which means unlimited playlists. Creation is serialized per
+account so concurrent requests cannot bypass the quota. Playlist reads and mutations scope
+queries by the authenticated owner; a playlist owned by another account is reported as not
+found. The database primary keys and `ON CONFLICT` writes prevent duplicate favorites and duplicate tracks in a playlist. The
 track catalog response intentionally contains metadata only; playback details come from
 the authenticated playback endpoint and audio bytes are proxied from MinIO.
 

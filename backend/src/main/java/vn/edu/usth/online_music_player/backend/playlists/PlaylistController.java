@@ -32,6 +32,11 @@ public class PlaylistController {
         return playlistService.listPlaylists(currentUserId.require(principal));
     }
 
+    @GetMapping("/quota")
+    public PlaylistQuotaResponse getPlaylistQuota(Principal principal) {
+        return playlistService.getPlaylistQuota(currentUserId.require(principal));
+    }
+
     @PostMapping
     public ResponseEntity<PlaylistSummaryResponse> createPlaylist(
             Principal principal, @Valid @RequestBody CreatePlaylistRequest request) {

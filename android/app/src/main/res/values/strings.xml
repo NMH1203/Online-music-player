@@ -31,6 +31,13 @@
     <string name="library_action_failed">Không thể cập nhật. Hãy thử lại sau.</string>
     <string name="library_sign_in_again">Phiên đăng nhập không hợp lệ. Hãy đăng nhập lại.</string>
     <string name="playlist_create">Tạo playlist</string>
+    <string name="playlist_quota_remaining">Free: %1$d/%2$d playlist · Còn tạo được %3$d</string>
+    <string name="playlist_quota_unlimited">Premium: Không giới hạn playlist</string>
+    <string name="playlist_quota_unavailable">Không tải được giới hạn playlist. Máy chủ vẫn sẽ kiểm tra khi tạo.</string>
+    <string name="playlist_quota_button">Đã đạt giới hạn Free</string>
+    <string name="playlist_quota_title">Đã đạt giới hạn playlist Free</string>
+    <string name="playlist_quota_reached">Bạn đã có %1$d playlist miễn phí. Hãy xóa playlist không còn dùng để tạo playlist mới.</string>
+    <string name="playlist_quota_message">Gói Free cho phép tối đa 3 playlist. Hãy xóa playlist không còn dùng rồi thử lại.</string>
     <string name="playlist_create_title">Playlist mới</string>
     <string name="playlist_name_hint">Tên playlist</string>
     <string name="playlist_description_hint">Mô tả (không bắt buộc)</string>

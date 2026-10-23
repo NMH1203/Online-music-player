@@ -29,12 +29,15 @@ import vn.edu.usth.online_music_player.data.library.LibraryContent;
 import vn.edu.usth.online_music_player.data.library.LibraryRepository;
 import vn.edu.usth.online_music_player.data.library.PlaylistSummary;
 import vn.edu.usth.online_music_player.data.playlist.PlaylistRepository;
+import vn.edu.usth.online_music_player.data.playlist.PlaylistQuota;
 import vn.edu.usth.online_music_player.databinding.FragmentLibraryBinding;
 import vn.edu.usth.online_music_player.databinding.ItemLibraryEntryBinding;
 
 public class LibraryFragment extends Fragment {
     private FragmentLibraryBinding binding;
     private LibraryViewModel viewModel;
+    private final PlaylistRepository playlistRepository = new PlaylistRepository();
+    private PlaylistQuota playlistQuota;
 
     @Nullable
     @Override
@@ -55,7 +58,7 @@ public class LibraryFragment extends Fragment {
                 ContextCompat.getColor(requireContext(), R.color.accent_primary));
         binding.libraryRefresh.setOnRefreshListener(viewModel::refresh);
         binding.libraryRetry.setOnClickListener(ignored -> viewModel.refresh());
-        binding.createPlaylistButton.setOnClickListener(ignored -> showCreatePlaylistDialog());
+        binding.createPlaylistButton.setOnClickListener(ignored -> onCreatePlaylistClicked());
         viewModel.getState().observe(getViewLifecycleOwner(), this::render);
     }
 
@@ -65,6 +68,7 @@ public class LibraryFragment extends Fragment {
         if (viewModel != null) {
             viewModel.refresh();
         }
+        loadPlaylistQuota();
     }
 
     @Override
@@ -115,6 +119,7 @@ public class LibraryFragment extends Fragment {
     }
 
     private void renderContent(LibraryContent content) {
+        renderPlaylistQuota(playlistQuota);
         List<FavoriteTrack> tracks = content.getFavoriteTracks();
         binding.tracksSectionTitle.setText(
                 getString(R.string.library_tracks_title, tracks.size()));
@@ -176,6 +181,75 @@ public class LibraryFragment extends Fragment {
         }
     }
 
+    private void onCreatePlaylistClicked() {
+        if (playlistQuota != null && !playlistQuota.canCreatePlaylist()) {
+            showPlaylistLimitDialog();
+            return;
+        }
+        showCreatePlaylistDialog();
+    }
+
+    private void loadPlaylistQuota() {
+        playlistRepository.getPlaylistQuota(new PlaylistRepository.ResultCallback<PlaylistQuota>() {
+            @Override
+            public void onSuccess(PlaylistQuota result) {
+                if (!isAdded() || binding == null) {
+                    return;
+                }
+                playlistQuota = result;
+                renderPlaylistQuota(result);
+            }
+
+            @Override
+            public void onFailure(PlaylistRepository.FailureType failureType) {
+                if (!isAdded() || binding == null) {
+                    return;
+                }
+                playlistQuota = null;
+                renderPlaylistQuota(null);
+            }
+        });
+    }
+
+    private void renderPlaylistQuota(@Nullable PlaylistQuota quota) {
+        if (binding == null) {
+            return;
+        }
+        binding.playlistQuota.setVisibility(View.VISIBLE);
+        if (quota == null) {
+            binding.playlistQuota.setText(R.string.playlist_quota_unavailable);
+            binding.createPlaylistButton.setText(R.string.playlist_create);
+            return;
+        }
+        Integer maxPlaylists = quota.getMaxPlaylists();
+        if (maxPlaylists == null) {
+            binding.playlistQuota.setText(R.string.playlist_quota_unlimited);
+            binding.createPlaylistButton.setText(R.string.playlist_create);
+        } else if (!quota.canCreatePlaylist()) {
+            binding.playlistQuota.setText(
+                    getString(R.string.playlist_quota_reached, maxPlaylists));
+            binding.createPlaylistButton.setText(R.string.playlist_quota_button);
+        } else {
+            binding.playlistQuota.setText(getString(
+                    R.string.playlist_quota_remaining,
+                    quota.getPlaylistCount(),
+                    maxPlaylists,
+                    maxPlaylists - quota.getPlaylistCount()));
+            binding.createPlaylistButton.setText(R.string.playlist_create);
+        }
+    }
+
+    private void showPlaylistLimitDialog() {
+        if (!isAdded()) {
+            return;
+        }
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.playlist_quota_title)
+                .setMessage(R.string.playlist_quota_message)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
     private void showCreatePlaylistDialog() {
         LinearLayout form = new LinearLayout(requireContext());
         form.setOrientation(LinearLayout.VERTICAL);
@@ -219,9 +293,8 @@ public class LibraryFragment extends Fragment {
                 return;
             }
 
-            PlaylistRepository repository = new PlaylistRepository();
             dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setEnabled(false);
-            repository.createPlaylist(name, description, new PlaylistRepository.ResultCallback<PlaylistSummary>() {
+            playlistRepository.createPlaylist(name, description, new PlaylistRepository.ResultCallback<PlaylistSummary>() {
                 @Override
                 public void onSuccess(PlaylistSummary created) {
                     dialog.dismiss();
@@ -245,6 +318,12 @@ public class LibraryFragment extends Fragment {
                     }
                     dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
                             .setEnabled(true);
+                    if (failureType == PlaylistRepository.FailureType.PLAYLIST_LIMIT_REACHED) {
+                        dialog.dismiss();
+                        loadPlaylistQuota();
+                        showPlaylistLimitDialog();
+                        return;
+                    }
                     showMessage(messageFor(failureType));
                 }
             });
@@ -264,6 +343,9 @@ public class LibraryFragment extends Fragment {
     private String messageFor(PlaylistRepository.FailureType failureType) {
         if (failureType == PlaylistRepository.FailureType.AUTHENTICATION_REQUIRED) {
             return getString(R.string.playlist_auth_required);
+        }
+        if (failureType == PlaylistRepository.FailureType.PLAYLIST_LIMIT_REACHED) {
+            return getString(R.string.playlist_quota_message);
         }
         if (failureType == PlaylistRepository.FailureType.NETWORK) {
             return getString(R.string.playlist_network_error);
