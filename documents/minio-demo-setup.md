@@ -1,6 +1,6 @@
 # MinIO AIStor, metadata mapping và nhạc demo
 
-Các file trong hướng dẫn này nằm tại **D:\MobileAppPrj**. Docker Desktop chạy Linux containers. Python 3.12 có pip dùng để kiểm tra MP3 và seed; không cần FFmpeg. Cấu hình PostgreSQL vẫn ở `compose.yaml`; MinIO dùng `compose.minio.yaml`, project riêng `music-player-storage`.
+Các file trong hướng dẫn này nằm tại **D:\Online-music-player**. Docker Desktop chạy Linux containers. Python 3.12 có pip dùng để kiểm tra MP3 và seed; không cần FFmpeg. Cấu hình PostgreSQL vẫn ở `compose.yaml`; MinIO dùng `compose.minio.yaml`, project riêng `music-player-storage`.
 
 ## 1. Vì sao image đã tải nhưng MinIO chưa chạy?
 
