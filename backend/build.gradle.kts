@@ -22,6 +22,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("io.minio:minio:9.0.3")
     runtimeOnly("org.postgresql:postgresql")
+
+    testImplementation("junit:junit:4.13.2")
 }
 
 tasks.withType<JavaCompile>().configureEach {

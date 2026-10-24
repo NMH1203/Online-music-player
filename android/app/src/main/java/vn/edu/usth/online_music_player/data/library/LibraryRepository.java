@@ -108,7 +108,7 @@ public final class LibraryRepository {
         });
     }
 
-    private static FailureType classify(int responseCode) {
+    static FailureType classify(int responseCode) {
         if (responseCode == 401) {
             return FailureType.AUTHENTICATION_REQUIRED;
         }

@@ -13,6 +13,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
@@ -87,7 +88,7 @@ public class MainActivity extends AppCompatActivity implements PlaybackManager.L
 
     @Override
     public void onConnectionFailed() {
-        miniPlayer.setVisibility(View.GONE);
+        setMiniPlayerVisible(false);
     }
 
     public PlaybackManager getPlaybackManager() {
@@ -145,7 +146,7 @@ public class MainActivity extends AppCompatActivity implements PlaybackManager.L
         MediaController controller = playbackManager.getController();
         MediaItem item = controller == null ? null : controller.getCurrentMediaItem();
         if (item == null) {
-            miniPlayer.setVisibility(View.GONE);
+            setMiniPlayerVisible(false);
             mainHandler.removeCallbacks(progressUpdater);
             return;
         }
@@ -155,7 +156,7 @@ public class MainActivity extends AppCompatActivity implements PlaybackManager.L
         playbackArtist.setText(metadata.artist == null ? "" : metadata.artist);
         playbackToggle.setText(controller.isPlaying() ? "Ⅱ" : "▶");
         playbackToggle.setContentDescription(controller.isPlaying() ? "Tạm dừng" : "Phát");
-        miniPlayer.setVisibility(View.VISIBLE);
+        setMiniPlayerVisible(true);
         long duration = controller.getDuration();
         long position = controller.getCurrentPosition();
         if (duration > 0 && duration != C.TIME_UNSET) {
@@ -171,5 +172,19 @@ public class MainActivity extends AppCompatActivity implements PlaybackManager.L
         if (controller.isPlaying()) {
             mainHandler.postDelayed(progressUpdater, 500);
         }
+    }
+
+    private void setMiniPlayerVisible(boolean visible) {
+        if (miniPlayer == null || binding == null) {
+            return;
+        }
+        int bottomAnchor = visible ? R.id.mini_player : R.id.bottom_nav;
+        ConstraintLayout.LayoutParams navHostParams =
+                (ConstraintLayout.LayoutParams) binding.navHostFragment.getLayoutParams();
+        if (navHostParams.bottomToTop != bottomAnchor) {
+            navHostParams.bottomToTop = bottomAnchor;
+            binding.navHostFragment.setLayoutParams(navHostParams);
+        }
+        miniPlayer.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 }

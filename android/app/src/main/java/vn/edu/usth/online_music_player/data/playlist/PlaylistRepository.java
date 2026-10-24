@@ -3,8 +3,9 @@ package vn.edu.usth.online_music_player.data.playlist;
 import java.util.ArrayList;
 import java.io.IOException;
 import java.util.List;
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -109,7 +110,7 @@ public final class PlaylistRepository {
         });
     }
 
-    private static FailureType classify(Response<?> response) {
+    static FailureType classify(Response<?> response) {
         int responseCode = response.code();
         if (responseCode == 401) {
             return FailureType.AUTHENTICATION_REQUIRED;
@@ -119,11 +120,15 @@ public final class PlaylistRepository {
         }
         if (responseCode == 409 && response.errorBody() != null) {
             try {
-                JSONObject error = new JSONObject(response.errorBody().string());
-                if ("playlist_limit_reached".equals(error.optString("code"))) {
-                    return FailureType.PLAYLIST_LIMIT_REACHED;
+                JsonElement payload = new JsonParser().parse(response.errorBody().string());
+                if (payload.isJsonObject()) {
+                    JsonElement code = payload.getAsJsonObject().get("code");
+                    if (code != null && code.isJsonPrimitive()
+                            && "playlist_limit_reached".equals(code.getAsString())) {
+                        return FailureType.PLAYLIST_LIMIT_REACHED;
+                    }
                 }
-            } catch (IOException | JSONException ignored) {
+            } catch (IOException | JsonSyntaxException ignored) {
                 // Keep the generic server state when the error envelope is missing or invalid.
             }
         }
