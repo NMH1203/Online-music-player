@@ -1,6 +1,6 @@
 # MinIO AIStor, metadata mapping và nhạc demo
 
-Các file trong hướng dẫn này nằm tại **D:\MobileAppPrj**. Docker Desktop chạy Linux containers. Python 3.12 có pip dùng để kiểm tra MP3 và seed; không cần FFmpeg. Cấu hình PostgreSQL vẫn ở `compose.yaml`; MinIO dùng `compose.minio.yaml`, project riêng `music-player-storage`.
+Các file trong hướng dẫn này nằm tại **D:\Online-music-player**. Docker Desktop chạy Linux containers. Python 3.12 có pip dùng để kiểm tra MP3 và seed; không cần FFmpeg. Cấu hình PostgreSQL vẫn ở `compose.yaml`; MinIO dùng `compose.minio.yaml`, project riêng `music-player-storage`.
 
 ## 1. Vì sao image đã tải nhưng MinIO chưa chạy?
 
@@ -84,7 +84,7 @@ Bộ seed có **50 bản thu thật của Kevin MacLeod**, 10 bài mỗi thể l
 
 [Incompetech FAQ](https://incompetech.com/music/royalty-free/faq.html) cho phép streaming khi ghi công; [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) cho phép phân phối, kể cả mục đích thương mại, với điều kiện của giấy phép. Giữ MP3 nguyên bản, không áp dụng DRM hoặc điều khoản ngăn người nhận thực hiện các quyền CC BY. Nhạc có bản quyền được cấp phép, không gọi là “không bản quyền”.
 
-**Khi tích hợp Android, hiển thị Music credits hoặc Thông tin bài hát dễ tìm:** tên bài, Kevin MacLeod, nguồn, link CC BY 4.0, và “Original MP3 recording; no changes.” Nội dung có sẵn ở `track_audio_metadata.attribution_text` và [ATTRIBUTION.md](../database/demo/ATTRIBUTION.md). Chỉ lưu credit trong DB/repo không thay thế credit hiển thị cho người nghe. Backend và giao diện credits chưa được triển khai trong repo hiện tại.
+**Khi hoàn thiện giao diện Android, hiển thị Music credits hoặc Thông tin bài hát dễ tìm:** tên bài, Kevin MacLeod, nguồn, link CC BY 4.0, và “Original MP3 recording; no changes.” Nội dung có sẵn ở `track_audio_metadata.attribution_text` và [ATTRIBUTION.md](../database/demo/ATTRIBUTION.md). T08 trả attribution trong metadata playback; mini player chưa có màn chi tiết credits.
 
 ## 5. Mapping metadata
 
@@ -119,11 +119,11 @@ WHERE t.status = 'published';
 
 ## 6. Tích hợp Spring Boot và Android
 
-Seed tạo `storage/backend.env` chứa `MINIO_ENDPOINT`, `MINIO_REGION`, `MINIO_BUCKET`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`. Đây là tài khoản chỉ đọc `demo/audio/*`; root chỉ dùng cho setup/seed. Đưa các biến này vào Run Configuration của backend; Spring Boot không tự đọc file `.env`. Mẫu binding nằm ở `storage/application-storage.example.yaml`; nhóm cần triển khai `@ConfigurationProperties(prefix="storage")` và `MinioClient` tương ứng.
+Seed tạo `storage/backend.env` chứa `MINIO_ENDPOINT`, `MINIO_REGION`, `MINIO_BUCKET`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`. Đây là tài khoản chỉ đọc `demo/audio/*`; root chỉ dùng cho setup/seed. Đưa các biến này vào Run Configuration của backend; Spring Boot không tự đọc file `.env`. T08 đã thêm `StorageProperties`, `StorageConfiguration` và `MinioClient` trong `backend/`.
 
 Backend chạy trên Windows dùng `127.0.0.1:9000`. Nếu sau này backend chạy trong Docker, nối vào network `music-player-storage_default` và dùng **`http://minio:9000`**. Android gọi API backend, không nhận access key/secret key và không gọi cổng Console. Credential không nhúng vào APK.
 
-Luồng stream: xác thực user → lấy track published + metadata → `getObject(bucket, objectKey)` bằng tài khoản backend → trả `Content-Type`, độ dài và audio. Khi request có `Range`, xác thực range, truyền offset/length sang MinIO, trả 206 cùng `Content-Range`/`Accept-Ranges`; range sai trả 416. Bộ seed đã kiểm Range ở MinIO; HTTP proxy backend và playback Android cần được nhóm kiểm khi có implementation.
+Luồng stream T08: xác thực principal → lấy track published + metadata → đọc `getObject(bucket, objectKey)` bằng tài khoản backend → trả `Content-Type`, độ dài và audio. Với một byte range hợp lệ, backend truyền offset/length sang MinIO và trả 206 cùng `Content-Range`/`Accept-Ranges`; range không hợp lệ trả 416. Seed đã kiểm Range ở MinIO; backend và player T16 đã có mã nguồn nhưng chưa được kiểm tra runtime xuyên suốt. Principal vẫn phụ thuộc T04.
 
 ## 7. Kiểm tra SQL và xử lý lỗi
 

@@ -30,24 +30,22 @@
         tools:layout="@layout/fragment_profile" />
 
     <fragment
-        android:id="@+id/artistDetailFragment"
-        android:name="vn.edu.usth.online_music_player.ui.artist.ArtistDetailFragment"
-        android:label="Artist"
-        tools:layout="@layout/fragment_artist_detail">
-
+        android:id="@+id/playlist_detail_fragment"
+        android:name="vn.edu.usth.online_music_player.ui.playlist.PlaylistDetailFragment"
+        android:label="@string/playlist_detail_title"
+        tools:layout="@layout/fragment_playlist_detail">
         <argument
-            android:name="artistId"
+            android:name="playlistId"
             app:argType="string" />
     </fragment>
 
     <fragment
-        android:id="@+id/albumDetailFragment"
-        android:name="vn.edu.usth.online_music_player.ui.album.AlbumDetailFragment"
-        android:label="Album"
-        tools:layout="@layout/fragment_album_detail">
-
+        android:id="@+id/playlist_track_picker_fragment"
+        android:name="vn.edu.usth.online_music_player.ui.playlist.PlaylistTrackPickerFragment"
+        android:label="@string/playlist_picker_title"
+        tools:layout="@layout/fragment_playlist_track_picker">
         <argument
-            android:name="albumId"
+            android:name="playlistId"
             app:argType="string" />
     </fragment>
 </navigation>

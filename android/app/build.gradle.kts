@@ -59,6 +59,14 @@ dependencies {
     // Glide
     implementation(libs.glide)
 
+    // Pull-to-refresh for the personal library.
+    implementation(libs.swipe.refresh)
+
+    // Background audio playback, media controls, and authenticated HTTP streaming.
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.session)
+    implementation(libs.media3.datasource.okhttp)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
