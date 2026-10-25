@@ -17,10 +17,10 @@ public interface CatalogApi {
     @GET("search")
     Call<SearchResponse> search(@Query("q") String query);
 
-    @GET("artist/{id}")
+    @GET("artists/{id}")
     Call<ArtistDetailResponse> getArtist(@Path("id") String id);
 
-    @GET("album/{id}")
+    @GET("albums/{id}")
     Call<AlbumDetailResponse> getAlbum(@Path("id") String id);
 
 
