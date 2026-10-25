@@ -28,4 +28,24 @@
         android:name="vn.edu.usth.online_music_player.ui.profile.ProfileFragment"
         android:label="@string/menu_profile"
         tools:layout="@layout/fragment_profile" />
+
+    <fragment
+        android:id="@+id/playlist_detail_fragment"
+        android:name="vn.edu.usth.online_music_player.ui.playlist.PlaylistDetailFragment"
+        android:label="@string/playlist_detail_title"
+        tools:layout="@layout/fragment_playlist_detail">
+        <argument
+            android:name="playlistId"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/playlist_track_picker_fragment"
+        android:name="vn.edu.usth.online_music_player.ui.playlist.PlaylistTrackPickerFragment"
+        android:label="@string/playlist_picker_title"
+        tools:layout="@layout/fragment_playlist_track_picker">
+        <argument
+            android:name="playlistId"
+            app:argType="string" />
+    </fragment>
 </navigation>

@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +32,11 @@ public class PlaylistController {
         return playlistService.listPlaylists(currentUserId.require(principal));
     }
 
+    @GetMapping("/quota")
+    public PlaylistQuotaResponse getPlaylistQuota(Principal principal) {
+        return playlistService.getPlaylistQuota(currentUserId.require(principal));
+    }
+
     @PostMapping
     public ResponseEntity<PlaylistSummaryResponse> createPlaylist(
             Principal principal, @Valid @RequestBody CreatePlaylistRequest request) {
@@ -43,6 +49,22 @@ public class PlaylistController {
     public PlaylistDetailResponse getPlaylist(
             Principal principal, @PathVariable("playlistId") UUID playlistId) {
         return playlistService.getPlaylist(currentUserId.require(principal), playlistId);
+    }
+
+    @PutMapping("/{playlistId}")
+    public PlaylistSummaryResponse updatePlaylist(
+            Principal principal,
+            @PathVariable("playlistId") UUID playlistId,
+            @Valid @RequestBody UpdatePlaylistRequest request) {
+        return playlistService.updatePlaylist(
+                currentUserId.require(principal), playlistId, request);
+    }
+
+    @DeleteMapping("/{playlistId}")
+    public ResponseEntity<Void> deletePlaylist(
+            Principal principal, @PathVariable("playlistId") UUID playlistId) {
+        playlistService.deletePlaylist(currentUserId.require(principal), playlistId);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{playlistId}/tracks/{trackId}")

@@ -23,7 +23,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "BASE_URL", "\"https://dev.api.musicplayer.com/\"")
+            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
         }
         release {
             buildConfigField("String", "BASE_URL", "\"https://api.musicplayer.com/\"")
@@ -58,6 +58,14 @@ dependencies {
     
     // Glide
     implementation(libs.glide)
+
+    // Pull-to-refresh for the personal library.
+    implementation(libs.swipe.refresh)
+
+    // Background audio playback, media controls, and authenticated HTTP streaming.
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.session)
+    implementation(libs.media3.datasource.okhttp)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)

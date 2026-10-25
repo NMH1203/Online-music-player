@@ -1,18 +1,18 @@
 # Online Music Player
 
-Repository này chứa ứng dụng Android giao diện mẫu, backend Spring Boot cho thư viện cơ bản, cấu hình PostgreSQL/Flyway và công cụ chuẩn bị nhạc demo trên MinIO. Auth, tích hợp Android với API và playback vẫn đang chờ các nhiệm vụ tiếp theo. Các lệnh bên dưới dành cho PowerShell trên Windows và chạy từ chính repository này.
+Repository này chứa ứng dụng Android, backend Spring Boot, cấu hình PostgreSQL/Flyway và công cụ chuẩn bị nhạc demo trên MinIO. Library đọc favorites và playlist từ API; playlist hỗ trợ tạo, xem, sửa/xóa và thêm/xóa bài. Mã T08/T16 đã bổ sung backend stream HTTP Range và player Media3 chạy nền; phát nhạc xuyên suốt vẫn cần nối xác thực T04, khởi động backend/MinIO và kiểm tra trên thiết bị.
 
 ## Hiện trạng
 
 | Thành phần | Đã có trong repository |
 |---|---|
-| Android | Một Activity, thanh điều hướng và bốn màn hình Home, Search, Library, Profile. Nội dung các màn hình hiện là placeholder. |
+| Android | Một Activity, thanh điều hướng và bốn màn hình Home, Search, Library, Profile. Library hiển thị favorites/playlist từ API, gồm trạng thái rỗng, đăng nhập và lỗi mạng. Home, Search và Profile vẫn là placeholder. |
 | Dữ liệu | Docker Compose chạy PostgreSQL 16.13 và Flyway 11.20.2; migration V1–V8, SQL kiểm tra và fixture catalog. |
 | Lưu trữ nhạc | Compose MinIO AIStor riêng, script thiết lập và script tải/seed 50 MP3 demo có thông tin giấy phép. Cần license AIStor hợp lệ để chạy. |
-| Backend | `backend/` có API yêu thích track/album và nền tảng playlist; T04 sẽ kết nối principal xác thực vào API. |
-| Tích hợp | Android chưa gọi API, chưa có đăng nhập, tìm kiếm thực hoặc playback. |
+| Backend | `backend/` có API yêu thích, playlist và T08 stream bài đã publish qua MinIO với byte range; T04 cần kết nối principal xác thực vào API. |
+| Tích hợp | Library/Playlist/Playback gọi API bằng Retrofit. Access token chỉ giữ trong RAM; T04 cần nối luồng đăng nhập vào `AccessTokenStore`. T16 có MediaSessionService, queue và mini player. |
 
-Hai giá trị BASE_URL trong cấu hình Android hiện là địa chỉ mẫu và chưa được mã nguồn sử dụng. Manifest đã khai báo quyền Internet, notification và foreground service, nhưng ứng dụng chưa có media playback service. Tính năng dự kiến được mô tả trong [phạm vi dự án](documents/online-music-player-project-brief.md) và [thiết kế kiến trúc/API](documents/mobile-system-architecture-and-flows.md); đó chưa phải chức năng đã triển khai.
+Debug Android trỏ tới backend chạy trên máy host qua `10.0.2.2:8080`; bản release vẫn dùng URL mẫu. T16 đã khai báo media playback foreground service và điều khiển play/pause/seek/next/previous. Chưa có đăng nhập T04 trong nhánh này, vì vậy backend hiện trả 401 cho playback nếu chưa có principal; MinIO/backend và thiết bị thật cũng cần được chạy để kiểm thử luồng nghe thực tế. Xem [thiết kế kiến trúc/API](documents/mobile-system-architecture-and-flows.md).
 
 ## Cấu trúc chính
 
@@ -134,7 +134,7 @@ Một số chế độ hỗ trợ:
 .\scripts\Seed-DemoMusic.ps1 -Limit 3
 ~~~
 
-**-DownloadOnly** chỉ tải/cache; **-VerifyOnly** kiểm tra dữ liệu đã seed; **-Limit** chạy với số bài giới hạn. Nguồn và yêu cầu ghi công nằm trong [ATTRIBUTION.md](database/demo/ATTRIBUTION.md). Khi có giao diện phát nhạc, phải hiển thị credit cho người nghe. Android hiện chưa thể phát các bài này vì chưa có backend stream hoặc playback.
+**-DownloadOnly** chỉ tải/cache; **-VerifyOnly** kiểm tra dữ liệu đã seed; **-Limit** chạy với số bài giới hạn. Nguồn và yêu cầu ghi công nằm trong [ATTRIBUTION.md](database/demo/ATTRIBUTION.md). T08 trả attribution cùng metadata playback; giao diện riêng để người nghe mở thông tin giấy phép/credit vẫn cần hoàn thiện.
 
 ## Dừng và sao lưu dữ liệu
 
