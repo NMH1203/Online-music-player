@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: online-music-player-backend
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://127.0.0.1:5432/music_player}
+    username: ${DB_USERNAME:music_app}
+    password: ${DB_PASSWORD:music_local_dev_only}
+    hikari:
+      maximum-pool-size: 5
+      connection-timeout: 5000
+
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}
+  port: ${SERVER_PORT:8080}
