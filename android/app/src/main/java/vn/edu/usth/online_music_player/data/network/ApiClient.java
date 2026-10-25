@@ -27,6 +27,8 @@ public final class ApiClient {
                             .writeTimeout(15, TimeUnit.SECONDS)
                             .addInterceptor(chain -> {
                                 Request.Builder request = chain.request().newBuilder()
+                                        .tag(vn.edu.usth.online_music_player.data.session.SessionManager.Stamp.class,
+                                                vn.edu.usth.online_music_player.data.session.SessionManager.get().stamp())
                                         .header("Accept", "application/json");
                                 String token = AccessTokenStore.getAccessToken();
                                 if (token != null) {
@@ -34,6 +36,8 @@ public final class ApiClient {
                                 }
                                 return chain.proceed(request.build());
                             })
+                            .authenticator((route, response) ->
+                                    vn.edu.usth.online_music_player.data.session.SessionManager.get().authenticate(response))
                             .build();
 
                     retrofit = new Retrofit.Builder()

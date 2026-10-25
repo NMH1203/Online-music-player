@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity implements PlaybackManager.L
     private TextView playbackArtist;
     private TextView playbackToggle;
     private SeekBar playbackSeek;
+    private vn.edu.usth.online_music_player.ui.profile.ProfileViewModel accountModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +61,21 @@ public class MainActivity extends AppCompatActivity implements PlaybackManager.L
         playbackManager = new PlaybackManager(this);
         playbackManager.setListener(this);
         setupMiniPlayer();
+        accountModel = new androidx.lifecycle.ViewModelProvider(this).get(
+                vn.edu.usth.online_music_player.ui.profile.ProfileViewModel.class);
+        accountModel.state().observe(this, state -> {
+            if (!state.signedIn || state.profile == null || state.entitlement == null || state.busy) return;
+            String user = state.profile.id;
+            if (!state.entitlement.adFree && !user.equals(accountModel.appAdShownFor)) {
+                MediaController controller = playbackManager.getController();
+                if (controller != null && controller.getCurrentMediaItem() != null) return;
+                accountModel.appAdShownFor = user;
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                        .setTitle("Âm nhạc không gián đoạn")
+                        .setMessage("Quảng cáo mô phỏng\n\nKhám phá Premium: không quảng cáo, playlist và lịch sử nghe không giới hạn.")
+                        .setPositiveButton("Tiếp tục nghe", null).show();
+            }
+        });
 
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
         if (navHostFragment != null) {

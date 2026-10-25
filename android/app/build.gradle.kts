@@ -2,6 +2,11 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+val debugApiUrl = providers.gradleProperty("musicApiUrl").orElse("http://10.0.2.2:8080/").get()
+require(debugApiUrl.matches(Regex("https?://[a-zA-Z0-9.:-]+/"))) {
+    "musicApiUrl must be an HTTP(S) origin ending in /"
+}
+
 android {
     namespace = "vn.edu.usth.online_music_player"
     compileSdk = 35
@@ -23,7 +28,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
+            buildConfigField("String", "BASE_URL", "\"$debugApiUrl\"")
         }
         release {
             buildConfigField("String", "BASE_URL", "\"https://api.musicplayer.com/\"")
@@ -70,4 +75,5 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
+    androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 }
