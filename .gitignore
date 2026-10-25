@@ -27,3 +27,5 @@ storage/backend.env
 .DS_Store
 Thumbs.db
 *.dump
+# local database backups (T31)
+backups/
