@@ -10,4 +10,8 @@ public record TrackPlaybackResponse(
         String mimeType,
         long fileSizeBytes,
         String streamUrl,
-        String attributionText) {}
+        String attributionText,
+        UUID artistId,
+        UUID albumId,
+        String albumTitle,
+        String coverUrl) {}

@@ -10,7 +10,12 @@ public final class AccountModels {
         public Integer maxPlaylists, historyDays;
     }
     public static class Payment { public String paymentId, status, subscriptionId; public Entitlement entitlement; }
-    public static class History { public String title, artist_name, started_at; }
+    /** GET /me/history uses snake_case field names. */
+    public static class History {
+        public String id, track_id, title, artist_name, album_title, cover_url, started_at;
+        public int duration_seconds, listened_seconds;
+    }
+    public static class Stats { public int validPlays, minutesListened, likedTracks, likedAlbums, playlists; }
     public static class Login {
         public final String email, password, displayName;
         public Login(String email, String password, String name) { this.email=email; this.password=password; this.displayName=name; }

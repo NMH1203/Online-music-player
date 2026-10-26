@@ -1,4 +1,5 @@
 name: music-player
+
 services:
   db:
     image: postgres:16.13-bookworm
@@ -17,6 +18,7 @@ services:
       timeout: 3s
       retries: 30
       start_period: 10s
+
   migrate:
     image: redgate/flyway:11.20.2
     depends_on:
@@ -36,5 +38,68 @@ services:
         read_only: true
         bind:
           create_host_path: false
+
+  minio:
+    image: quay.io/minio/aistor/minio:RELEASE.2026-09-19T17-05-25Z
+    restart: unless-stopped
+    command: ["minio", "server", "/data", "--console-address", ":9001", "--license", "/minio.license"]
+    env_file:
+      - ./storage/.env
+    environment:
+      MINIO_SITE_REGION: ${MINIO_REGION:-us-east-1}
+    ports:
+      - "127.0.0.1:${MINIO_API_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+      - type: bind
+        source: ./storage/minio.license
+        target: /minio.license
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      minio:
+        condition: service_healthy
+    env_file:
+      - path: ./storage/backend.env
+        required: false
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-music_player}
+      DB_USERNAME: ${POSTGRES_USER:-music_app}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-music_local_dev_only}
+      SERVER_ADDRESS: 0.0.0.0
+      SERVER_PORT: 8080
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?Set AUTH_JWT_SECRET in .env (at least 32 bytes) or run scripts/Setup-Minio.ps1}
+      DEMO_ENABLED: ${DEMO_ENABLED:-true}
+      MINIO_ENDPOINT: http://minio:9000
+    ports:
+      - "${BACKEND_BIND_ADDRESS:-127.0.0.1}:${BACKEND_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/home"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 25s
+
 volumes:
   postgres_data:
+    name: music-player_postgres_data
+  minio_data:
+    name: music-player-storage_minio_data

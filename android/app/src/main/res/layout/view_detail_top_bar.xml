@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Back arrow + page title used by Album, Artist, Playlist and other pushed pages. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="8dp">
+
+    <ImageButton
+        android:id="@+id/top_bar_back"
+        style="@style/Widget.App.IconButton"
+        android:contentDescription="@string/action_back"
+        android:src="@drawable/ic_arrow_left" />
+
+    <TextView
+        android:id="@+id/top_bar_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:layout_weight="1"
+        android:accessibilityHeading="true"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textAppearance="@style/TextAppearance.App.Headline"
+        tools:text="Album" />
+</LinearLayout>

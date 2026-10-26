@@ -3,6 +3,7 @@ package vn.edu.usth.online_music_player.data.playback;
 import android.content.ComponentName;
 import android.content.Context;
 import android.net.Uri;
+import android.os.Bundle;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.media3.common.MediaItem;
@@ -18,6 +19,10 @@ import vn.edu.usth.online_music_player.BuildConfig;
 
 /** Activity-scoped controller for queue and transport commands sent to PlaybackService. */
 public final class PlaybackManager {
+    /** MediaMetadata extras keys used by Now Playing to open the artist/album pages. */
+    public static final String EXTRA_ARTIST_ID = "artistId";
+    public static final String EXTRA_ALBUM_ID = "albumId";
+
     public interface Listener {
         void onPlaybackChanged();
         void onConnectionFailed();
@@ -31,7 +36,7 @@ public final class PlaybackManager {
         }
     };
 
-    @Nullable private Listener listener;
+    private final List<Listener> listeners = new ArrayList<>();
     @Nullable private MediaController controller;
     @Nullable private ListenableFuture<MediaController> controllerFuture;
     @Nullable private Runnable pendingCommand;
@@ -40,9 +45,13 @@ public final class PlaybackManager {
         applicationContext = context.getApplicationContext();
     }
 
-    public void setListener(@Nullable Listener listener) {
-        this.listener = listener;
-        notifyPlaybackChanged();
+    public void addListener(Listener listener) {
+        if (!listeners.contains(listener)) listeners.add(listener);
+        listener.onPlaybackChanged();
+    }
+
+    public void removeListener(Listener listener) {
+        listeners.remove(listener);
     }
 
     public void connect() {
@@ -73,9 +82,8 @@ public final class PlaybackManager {
                     Thread.currentThread().interrupt();
                 }
                 controllerFuture = null;
-                Listener currentListener = listener;
-                if (currentListener != null) {
-                    currentListener.onConnectionFailed();
+                for (Listener current : new ArrayList<>(listeners)) {
+                    current.onConnectionFailed();
                 }
             }
         }, ContextCompat.getMainExecutor(applicationContext));
@@ -146,6 +154,46 @@ public final class PlaybackManager {
         }
     }
 
+    /** Jumps to a queue entry by its index in the player's timeline. */
+    public void playItemAt(int index) {
+        if (controller != null && index >= 0 && index < controller.getMediaItemCount()) {
+            controller.seekTo(index, 0L);
+            controller.play();
+        }
+    }
+
+    public void removeItemAt(int index) {
+        if (controller != null && index >= 0 && index < controller.getMediaItemCount()
+                && index != controller.getCurrentMediaItemIndex()) {
+            controller.removeMediaItem(index);
+        }
+    }
+
+    /** Drops everything after the current track ("Clear" on the Queue screen). */
+    public void clearUpNext() {
+        if (controller != null) {
+            int count = controller.getMediaItemCount();
+            int from = controller.getCurrentMediaItemIndex() + 1;
+            if (from < count) controller.removeMediaItems(from, count);
+        }
+    }
+
+    /** Re-prepares after a playback error, keeping the queue and position. */
+    public void retry() {
+        if (controller != null) {
+            controller.prepare();
+            controller.play();
+        }
+    }
+
+    /** Stops playback and drops the queue, e.g. when the user is signed out. */
+    public void stop() {
+        if (controller != null) {
+            controller.stop();
+            controller.clearMediaItems();
+        }
+    }
+
     public void seekTo(long positionMs) {
         if (controller != null) {
             controller.seekTo(positionMs);
@@ -166,27 +214,37 @@ public final class PlaybackManager {
         }
     }
 
+    /** Resolves a server-relative path (stream or artwork) against the API base URL. */
+    @Nullable
+    public static String absoluteUrl(@Nullable String path) {
+        if (path == null || path.isEmpty()) return null;
+        if (path.startsWith("http://") || path.startsWith("https://")) return path;
+        return BuildConfig.BASE_URL + (path.startsWith("/") ? path.substring(1) : path);
+    }
+
     private MediaItem toMediaItem(TrackPlayback track) {
-        String streamUrl = track.getStreamUrl();
-        String absoluteUrl = streamUrl.startsWith("http://") || streamUrl.startsWith("https://")
-                ? streamUrl
-                : BuildConfig.BASE_URL + (streamUrl.startsWith("/") ? streamUrl.substring(1) : streamUrl);
+        Bundle extras = new Bundle();
+        extras.putString(EXTRA_ARTIST_ID, track.getArtistId());
+        extras.putString(EXTRA_ALBUM_ID, track.getAlbumId());
+        String cover = absoluteUrl(track.getCoverUrl());
         MediaMetadata metadata = new MediaMetadata.Builder()
                 .setTitle(track.getTitle())
                 .setArtist(track.getArtistName())
+                .setAlbumTitle(track.getAlbumTitle())
+                .setArtworkUri(cover == null ? null : Uri.parse(cover))
+                .setExtras(extras)
                 .build();
         return new MediaItem.Builder()
                 .setMediaId(track.getTrackId())
-                .setUri(Uri.parse(absoluteUrl))
+                .setUri(Uri.parse(absoluteUrl(track.getStreamUrl())))
                 .setMimeType(track.getMimeType())
                 .setMediaMetadata(metadata)
                 .build();
     }
 
     private void notifyPlaybackChanged() {
-        Listener currentListener = listener;
-        if (currentListener != null) {
-            currentListener.onPlaybackChanged();
+        for (Listener current : new ArrayList<>(listeners)) {
+            current.onPlaybackChanged();
         }
     }
 }

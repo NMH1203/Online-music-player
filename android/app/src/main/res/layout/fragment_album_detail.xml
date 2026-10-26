@@ -1,72 +1,137 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Figma "Album detail – populated / load error" (2028:536, 2028:687). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_primary"
-    android:fillViewport="true">
+    android:orientation="vertical">
 
-    <LinearLayout
+    <include
+        android:id="@+id/album_top_bar"
+        layout="@layout/view_detail_top_bar" />
+
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp"
-        android:paddingBottom="100dp" >
-
-        <TextView
-            android:id="@+id/albumTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@color/text_primary"
-            android:textSize="28sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/albumArtist"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textColor="@color/text_secondary"
-            android:textSize="16sp" />
-
-        <TextView
-            android:id="@+id/albumReleaseDate"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="Tracks"
-            android:textColor="@color/text_primary"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
 
         <LinearLayout
-            android:id="@+id/albumTracksContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="24dp">
 
-        <ProgressBar
-            android:id="@+id/albumDetailProgress"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="20dp"
-            android:indeterminateTint="@color/accent_primary"
-            android:visibility="gone" />
+            <ProgressBar
+                android:id="@+id/albumDetailProgress"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="48dp"
+                android:indeterminateTint="@color/accent_primary" />
 
-        <TextView
-            android:id="@+id/albumDetailMessage"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:textColor="@color/text_secondary"
-            android:visibility="gone"/>
+            <include
+                android:id="@+id/album_state"
+                layout="@layout/view_state"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:visibility="gone" />
 
-    </LinearLayout>
-</ScrollView>
+            <LinearLayout
+                android:id="@+id/album_content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/album_artwork"
+                    android:layout_width="240dp"
+                    android:layout_height="240dp"
+                    android:layout_gravity="center_horizontal"
+                    android:background="@color/surface_secondary"
+                    android:contentDescription="@string/now_playing_artwork"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.App.ArtworkLarge" />
+
+                <TextView
+                    android:id="@+id/albumTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:accessibilityHeading="true"
+                    android:textAppearance="@style/TextAppearance.App.ScreenTitle"
+                    tools:text="After Hours" />
+
+                <TextView
+                    android:id="@+id/albumArtist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:drawableEnd="@drawable/ic_chevron_right"
+                    android:drawablePadding="8dp"
+                    android:drawableTint="@color/icon_secondary"
+                    android:gravity="center_vertical"
+                    android:textAppearance="@style/TextAppearance.App.Body"
+                    tools:text="Nova Lane" />
+
+                <TextView
+                    android:id="@+id/albumReleaseDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.App.Caption"
+                    tools:text="Album · 2026 · 10 songs · 38 min" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageButton
+                        android:id="@+id/album_like"
+                        style="@style/Widget.App.IconButton"
+                        android:layout_marginStart="-12dp"
+                        android:contentDescription="@string/album_like"
+                        android:src="@drawable/ic_heart" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/album_play"
+                        style="@style/Widget.App.Button.PlayLarge"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:layout_marginStart="8dp"
+                        android:contentDescription="@string/action_play_all"
+                        app:icon="@drawable/ic_play"
+                        app:iconSize="26dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/album_shuffle"
+                        style="@style/Widget.App.Button.Outline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:text="@string/action_shuffle"
+                        app:icon="@drawable/ic_shuffle" />
+                </LinearLayout>
+
+                <include
+                    android:id="@+id/album_songs_header"
+                    layout="@layout/view_section_header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp" />
+
+                <LinearLayout
+                    android:id="@+id/albumTracksContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

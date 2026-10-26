@@ -20,6 +20,7 @@ public final class PlaybackService extends MediaSessionService {
     @Nullable private ExoPlayer player;
     @Nullable private MediaSession mediaSession;
     @Nullable private BoundaryAds boundaryAds;
+    @Nullable private ListeningReporter listeningReporter;
 
     @Override
     public void onCreate() {
@@ -49,6 +50,8 @@ public final class PlaybackService extends MediaSessionService {
                         .build(),
                 true);
         player.setHandleAudioBecomingNoisy(true);
+        listeningReporter = new ListeningReporter(player);
+        player.addListener(listeningReporter);
         boundaryAds = new BoundaryAds(this, player);
         mediaSession = new MediaSession.Builder(this, boundaryAds.sessionPlayer()).build();
     }
@@ -61,6 +64,7 @@ public final class PlaybackService extends MediaSessionService {
 
     @Override
     public void onDestroy() {
+        if (listeningReporter != null) { listeningReporter.finish(); listeningReporter = null; }
         if (boundaryAds != null) { boundaryAds.close(); boundaryAds = null; }
         if (mediaSession != null) {
             Player sessionPlayer = mediaSession.getPlayer();

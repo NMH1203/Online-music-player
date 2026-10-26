@@ -15,6 +15,9 @@ public interface PlaylistApi {
     @GET("tracks")
     Call<List<CatalogTrack>> getPublishedTracks(@Query("query") String query);
 
+    @GET("me/playlists")
+    Call<List<PlaylistSummary>> getPlaylists();
+
     @POST("me/playlists")
     Call<PlaylistSummary> createPlaylist(@Body PlaylistWriteRequest request);
 

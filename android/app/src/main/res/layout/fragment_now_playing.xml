@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma "Now Playing" playing/loading/buffering/error (32:1167, 32:1221, 32:1278, 32:1332). -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_primary"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingBottom="24dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/now_playing_close"
+                style="@style/Widget.App.IconButton"
+                android:layout_marginStart="-12dp"
+                android:contentDescription="@string/now_playing_close"
+                android:src="@drawable/ic_chevron_down" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.05"
+                    android:text="@string/now_playing_label"
+                    android:textAppearance="@style/TextAppearance.App.Small" />
+
+                <TextView
+                    android:id="@+id/now_playing_context"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textAppearance="@style/TextAppearance.App.Caption"
+                    android:textColor="@color/text_primary"
+                    tools:text="After Hours" />
+            </LinearLayout>
+
+            <!-- Keeps the title centred; the Figma "…" menu has no MVP actions. -->
+            <Space
+                android:layout_width="36dp"
+                android:layout_height="48dp" />
+        </LinearLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="4dp">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/now_playing_artwork"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:background="@color/surface_secondary"
+                android:contentDescription="@string/now_playing_artwork"
+                android:scaleType="center"
+                android:src="@drawable/ic_music"
+                app:layout_constraintDimensionRatio="1:1"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.App.ArtworkLarge"
+                app:tint="@color/icon_secondary" />
+
+            <ProgressBar
+                android:id="@+id/now_playing_artwork_progress"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:background="@drawable/bg_avatar"
+                android:backgroundTint="@color/background_primary"
+                android:indeterminateTint="@color/accent_primary"
+                android:padding="18dp"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="@id/now_playing_artwork"
+                app:layout_constraintEnd_toEndOf="@id/now_playing_artwork"
+                app:layout_constraintStart_toStartOf="@id/now_playing_artwork"
+                app:layout_constraintTop_toTopOf="@id/now_playing_artwork" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/now_playing_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textAppearance="@style/TextAppearance.App.Headline"
+                android:textSize="28sp"
+                tools:text="Night Drive" />
+
+            <ImageButton
+                android:id="@+id/now_playing_like"
+                style="@style/Widget.App.IconButton"
+                android:contentDescription="@string/now_playing_like"
+                android:src="@drawable/ic_heart" />
+
+            <ImageButton
+                android:id="@+id/now_playing_add"
+                style="@style/Widget.App.IconButton"
+                android:layout_marginEnd="-12dp"
+                android:contentDescription="@string/now_playing_add_to_playlist"
+                android:src="@drawable/ic_list_plus" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/now_playing_artist"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackground"
+            android:drawableEnd="@drawable/ic_chevron_right"
+            android:drawablePadding="4dp"
+            android:drawableTint="@color/icon_secondary"
+            android:gravity="center_vertical"
+            android:textAppearance="@style/TextAppearance.App.SectionTitle"
+            android:textColor="@color/text_secondary"
+            tools:text="Nova Lane" />
+
+        <TextView
+            android:id="@+id/now_playing_album"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackground"
+            android:drawableEnd="@drawable/ic_chevron_right"
+            android:drawablePadding="4dp"
+            android:drawableTint="@color/icon_secondary"
+            android:gravity="center_vertical"
+            android:textAppearance="@style/TextAppearance.App.Caption"
+            tools:text="Album · After Hours" />
+
+        <SeekBar
+            android:id="@+id/now_playing_seek"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:layout_marginTop="12dp"
+            android:max="1000"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp"
+            android:progressBackgroundTint="@color/border_default"
+            android:progressTint="@color/accent_primary"
+            android:thumbTint="@color/accent_primary" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/now_playing_position"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textAppearance="@style/TextAppearance.App.Caption"
+                tools:text="1:24" />
+
+            <TextView
+                android:id="@+id/now_playing_duration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.App.Caption"
+                tools:text="3:42" />
+        </LinearLayout>
+
+        <!-- Status: "Playing", loading/buffering text, or the error card. -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:minHeight="64dp">
+
+            <LinearLayout
+                android:id="@+id/now_playing_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:accessibilityLiveRegion="polite"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/now_playing_status_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:drawablePadding="6dp"
+                    android:gravity="center"
+                    android:textAppearance="@style/TextAppearance.App.Caption"
+                    tools:text="Playing" />
+
+                <TextView
+                    android:id="@+id/now_playing_status_message"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center"
+                    android:textAppearance="@style/TextAppearance.App.Caption"
+                    android:visibility="gone"
+                    tools:text="Your music will resume automatically." />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/now_playing_error"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:accessibilityLiveRegion="assertive"
+                android:background="@drawable/bg_error_banner"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:paddingStart="16dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_alert"
+                    app:tint="@color/error" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/now_playing_error_title"
+                        android:textAppearance="@style/TextAppearance.App.Body"
+                        android:textColor="@color/error"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/now_playing_error_message"
+                        android:textAppearance="@style/TextAppearance.App.Small"
+                        android:textColor="@color/text_primary" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/now_playing_retry"
+                    style="@style/Widget.App.Button.Primary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/now_playing_retry" />
+            </LinearLayout>
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/now_playing_previous"
+                style="@style/Widget.App.IconButton"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:padding="18dp"
+                android:contentDescription="@string/action_previous"
+                android:src="@drawable/ic_skip_back" />
+
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="28dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/now_playing_toggle"
+                    style="@style/Widget.App.Button.PlayLarge"
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
+                    android:contentDescription="@string/action_pause"
+                    app:icon="@drawable/ic_pause" />
+
+                <ProgressBar
+                    android:id="@+id/now_playing_toggle_progress"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_gravity="center"
+                    android:elevation="8dp"
+                    android:importantForAccessibility="no"
+                    android:indeterminateTint="@color/accent_content"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <ImageButton
+                android:id="@+id/now_playing_next"
+                style="@style/Widget.App.IconButton"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:padding="18dp"
+                android:contentDescription="@string/action_next"
+                android:src="@drawable/ic_skip_forward" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/now_playing_queue"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:background="?attr/selectableItemBackground"
+            android:drawableStart="@drawable/ic_queue"
+            android:drawableEnd="@drawable/ic_chevron_right"
+            android:drawablePadding="8dp"
+            android:drawableTint="@color/icon_secondary"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="12dp"
+            android:text="@string/action_open_queue"
+            android:textAppearance="@style/TextAppearance.App.Caption" />
+    </LinearLayout>
+</ScrollView>

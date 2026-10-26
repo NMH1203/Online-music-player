@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lime play buttons turn neutral grey when there is nothing to play (Figma empty playlist / loading). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/surface_secondary" android:state_enabled="false" />
+    <item android:color="@color/accent_primary" />
+</selector>

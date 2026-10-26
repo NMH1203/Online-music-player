@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma info note (Playlist created, song added): neutral card with icon, title and detail. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/info_banner"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:accessibilityLiveRegion="polite"
+    android:background="@drawable/bg_card"
+    android:orientation="horizontal"
+    android:padding="14dp"
+    android:visibility="gone">
+
+    <ImageView
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_alert"
+        app:tint="@color/icon_secondary" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/info_banner_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.App.Body"
+            android:textColor="@color/text_primary"
+            tools:text="We couldn't sign you in." />
+
+        <TextView
+            android:id="@+id/info_banner_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="@style/TextAppearance.App.Caption"
+            android:textColor="@color/text_secondary"
+            tools:text="The email or password didn't match. Check your details and try again." />
+    </LinearLayout>
+</LinearLayout>

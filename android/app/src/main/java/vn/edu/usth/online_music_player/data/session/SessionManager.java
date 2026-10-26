@@ -47,9 +47,21 @@ public final class SessionManager {
         if(AccessTokenStore.getAccessToken()!=null) return true;
         return refreshLocked();
     }
+    /** Login/register failures the UI shows with its own copy. */
+    public static final class AuthFailure extends IOException {
+        public enum Kind { INVALID_CREDENTIALS, EMAIL_TAKEN }
+        public final Kind kind;
+        AuthFailure(Kind kind) { super(kind.name()); this.kind=kind; }
+    }
+    private final androidx.lifecycle.MutableLiveData<Boolean> expired=new androidx.lifecycle.MutableLiveData<>(false);
+    /** True after the server rejected the stored refresh token; the UI asks the user to sign in again. */
+    public androidx.lifecycle.LiveData<Boolean> expired() { return expired; }
+    public void acknowledgeExpired() { expired.postValue(false); }
     public synchronized void login(Login login, boolean register) throws IOException {
         flushRevocations();
         retrofit2.Response<Session> response=(register ? rawApi.register(login) : rawApi.login(login)).execute();
+        if(response.code()==401) throw new AuthFailure(AuthFailure.Kind.INVALID_CREDENTIALS);
+        if(register && response.code()==409) throw new AuthFailure(AuthFailure.Kind.EMAIL_TAKEN);
         if(!response.isSuccessful() || response.body()==null) throw apiError(response);
         save(response.body());
         generation++;
@@ -66,11 +78,11 @@ public final class SessionManager {
             }
         } catch(Exception e) {
             clear();
-            throw new IOException("Đã đăng xuất trên máy. Không lưu được yêu cầu thu hồi phiên trên server.",e);
+            throw new IOException("Signed out on this device, but the server-side sign-out could not be saved.",e);
         }
         clear();
         flushRevocations();
-        if(!queuedRevocations().isEmpty()) throw new IOException("Đã đăng xuất trên máy. Phiên trên server sẽ được thu hồi khi kết nối lại.");
+        if(!queuedRevocations().isEmpty()) throw new IOException("Signed out on this device. The server session will be revoked when you are back online.");
     }
     private java.util.List<String> queuedRevocations() {
         String json=revocations.read();
@@ -92,14 +104,14 @@ public final class SessionManager {
     }
     private void save(Session session) throws IOException {
         try { storage.write(session.refreshToken); }
-        catch(Exception e) { clear(); throw new IOException("Không thể lưu phiên an toàn. Vui lòng đăng nhập lại.",e); }
+        catch(Exception e) { clear(); throw new IOException("Couldn't store the session securely. Sign in again.",e); }
         AccessTokenStore.replaceAccessToken(session.accessToken);
     }
     private boolean refreshLocked() throws IOException {
         String refresh=storage.read();
         if(refresh==null) return false;
         retrofit2.Response<Session> response=rawApi.refresh(new Refresh(refresh)).execute();
-        if(response.code()==401 || response.code()==403) { clear(); return false; }
+        if(response.code()==401 || response.code()==403) { clear(); expired.postValue(true); return false; }
         if(!response.isSuccessful() || response.body()==null) throw apiError(response);
         save(response.body()); return true;
     }
@@ -121,7 +133,7 @@ public final class SessionManager {
         storage.clear(); AccessTokenStore.clear(); EntitlementStore.clear();
     }
     public static IOException apiError(retrofit2.Response<?> response) {
-        String message="Không thể hoàn thành yêu cầu ("+response.code()+").";
+        String message="Request failed ("+response.code()+").";
         try {
             if(response.errorBody()!=null) {
                 com.google.gson.JsonObject error=new com.google.gson.Gson().fromJson(response.errorBody().string(),com.google.gson.JsonObject.class);
