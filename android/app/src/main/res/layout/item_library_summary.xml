@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma "Library – empty" summary row: icon, group name, count. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="56dp"
+    android:layout_marginTop="10dp"
+    android:background="@drawable/bg_card"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="14dp">
+
+    <ImageView
+        android:id="@+id/summary_icon"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:importantForAccessibility="no"
+        app:tint="@color/icon_primary"
+        tools:src="@drawable/ic_heart" />
+
+    <TextView
+        android:id="@+id/summary_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:textAppearance="@style/TextAppearance.App.Body"
+        android:textStyle="bold"
+        tools:text="Liked songs" />
+
+    <TextView
+        android:id="@+id/summary_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.App.Caption"
+        tools:text="0 songs" />
+</LinearLayout>

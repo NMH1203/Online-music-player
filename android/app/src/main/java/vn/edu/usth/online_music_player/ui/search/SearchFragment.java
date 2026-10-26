@@ -1,6 +1,5 @@
 package vn.edu.usth.online_music_player.ui.search;
 
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -9,297 +8,280 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-
+import android.view.inputmethod.EditorInfo;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-
 import java.util.List;
-import java.util.Locale;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-
+import vn.edu.usth.online_music_player.MainActivity;
 import vn.edu.usth.online_music_player.R;
 import vn.edu.usth.online_music_player.data.catalog.ApiClient;
-import vn.edu.usth.online_music_player.data.catalog.CatalogModels.Track;
 import vn.edu.usth.online_music_player.data.catalog.CatalogModels.Album;
 import vn.edu.usth.online_music_player.data.catalog.CatalogModels.Artist;
+import vn.edu.usth.online_music_player.data.catalog.CatalogModels.HomeResponse;
 import vn.edu.usth.online_music_player.data.catalog.CatalogModels.SearchResponse;
+import vn.edu.usth.online_music_player.data.catalog.CatalogModels.Track;
 import vn.edu.usth.online_music_player.databinding.FragmentSearchBinding;
+import vn.edu.usth.online_music_player.databinding.ItemRecentSearchBinding;
+import vn.edu.usth.online_music_player.databinding.ItemSongRowBinding;
+import vn.edu.usth.online_music_player.databinding.ViewSectionHeaderBinding;
+import vn.edu.usth.online_music_player.ui.common.CatalogViews;
 
+/** Figma "Search": recent searches + suggestions when idle, grouped results, no-results and error states. */
 public class SearchFragment extends Fragment {
-
-    private FragmentSearchBinding binding;
-
     private final Handler searchHandler = new Handler(Looper.getMainLooper());
-    private Runnable pendingSearch;
-    private Call<SearchResponse> activeSearch;
+    private FragmentSearchBinding binding;
+    private RecentSearches recent;
+    @Nullable private Runnable pendingSearch;
+    @Nullable private Call<SearchResponse> activeSearch;
+    @Nullable private Call<HomeResponse> suggestionsCall;
 
     @Nullable
     @Override
-    public View onCreateView(
-            @NonNull LayoutInflater inflater,
-            @Nullable ViewGroup container,
-            @Nullable Bundle savedInstanceState
-    )
-    {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
         binding = FragmentSearchBinding.inflate(inflater, container, false);
-
-        binding.searchMessage.setText("Search for songs, artists, or albums");
-        setupSearchInput();
-
         return binding.getRoot();
     }
 
-    private void setupSearchInput() {
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        recent = new RecentSearches(requireContext());
+        binding.searchRecentHeader.sectionTitle.setText(R.string.search_recent);
+        binding.searchRecentHeader.sectionSeeAll.setText(R.string.search_clear_all);
+        binding.searchRecentHeader.sectionSeeAll.setOnClickListener(ignored -> {
+            recent.clear();
+            renderRecent();
+        });
+        hideSeeAll(binding.searchSuggestionsHeader, R.string.search_try_new);
         binding.searchInput.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(
-                    CharSequence text,
-                    int start,
-                    int count,
-                    int after
-            ) {
-                // No need to solve before text changed
-            }
+            @Override public void beforeTextChanged(CharSequence text, int start, int count, int after) {}
+            @Override public void afterTextChanged(Editable editable) {}
 
             @Override
-            public void onTextChanged(
-                    CharSequence text,
-                    int start,
-                    int before,
-                    int count
-            ) {
-                String query = text.toString().trim();
-
-                binding.clearButton.setVisibility(
-                        query.isEmpty() ? View.GONE : View.VISIBLE
-                );
-
-                // Cancel the previous search wait to avoid calling the API for each character
-                if (pendingSearch != null) {
-                    searchHandler.removeCallbacks(pendingSearch);
-                }
-
-                // Cancel old request if users inserted new query
-                if (activeSearch != null) {
-                    activeSearch.cancel();
-                }
-
-                if (query.isEmpty()) {
-                    clearResults();
-                    binding.searchProgress.setVisibility(View.GONE);
-                    binding.searchMessage.setText(
-                            "Search for songs, artists, or albums"
-                    );
-                    binding.searchMessage.setVisibility(View.VISIBLE);
-                    return;
-                }
-
-                pendingSearch = () -> searchCatalog(query);
-
-                // Wait for user to stop typing 400ms to sent request
-                searchHandler.postDelayed(pendingSearch, 400);
+            public void onTextChanged(CharSequence text, int start, int before, int count) {
+                scheduleSearch(text.toString().trim());
             }
-
-
-            @Override
-            public void afterTextChanged(Editable editable) {
-                // No need to solve after text changed
+        });
+        binding.searchInput.setOnEditorActionListener((field, action, event) -> {
+            boolean enterKey = event != null && event.getKeyCode() == android.view.KeyEvent.KEYCODE_ENTER
+                    && event.getAction() == android.view.KeyEvent.ACTION_DOWN;
+            if (action != EditorInfo.IME_ACTION_SEARCH && !enterKey) return false;
+            String query = currentQuery();
+            if (!query.isEmpty()) {
+                recent.add(query);
+                searchNow(query);
             }
-        } );
-
-        binding.clearButton.setOnClickListener(view ->
-                binding.searchInput.setText("")
-        );
+            return true;
+        });
+        renderIdle();
+        loadSuggestions();
+        // Coming back from an album/artist page, the restored query re-runs through the TextWatcher.
     }
 
-    private void searchCatalog(String query) {
+    private void scheduleSearch(String query) {
+        if (pendingSearch != null) searchHandler.removeCallbacks(pendingSearch);
+        if (activeSearch != null) activeSearch.cancel();
+        if (query.isEmpty()) {
+            renderIdle();
+            return;
+        }
+        pendingSearch = () -> searchNow(query);
+        // Wait until typing pauses so every character does not hit the API.
+        searchHandler.postDelayed(pendingSearch, 400);
+    }
+
+    private void searchNow(String query) {
         if (binding == null) return;
-
+        if (activeSearch != null) activeSearch.cancel();
         clearResults();
-        binding.searchMessage.setVisibility(View.GONE);
+        binding.searchIdle.setVisibility(View.GONE);
+        binding.searchState.getRoot().setVisibility(View.GONE);
         binding.searchProgress.setVisibility(View.VISIBLE);
-
-        activeSearch = ApiClient.catalog().search(query);
-
-        activeSearch.enqueue(new Callback<>() {
+        Call<SearchResponse> call = ApiClient.catalog().search(query);
+        activeSearch = call;
+        call.enqueue(new Callback<SearchResponse>() {
             @Override
-            public void onResponse(
-                    @NonNull Call<SearchResponse> call,
-                    @NonNull Response<SearchResponse> response
-            ) {
-                if (binding == null || call.isCanceled()) return;
-
+            public void onResponse(@NonNull Call<SearchResponse> done, @NonNull Response<SearchResponse> response) {
+                if (binding == null || done.isCanceled()) return;
                 binding.searchProgress.setVisibility(View.GONE);
-
                 if (!response.isSuccessful() || response.body() == null) {
-                    showMessage("Search failed. HTTP " + response.code());
+                    showError(query);
                     return;
                 }
-
-                showResult(response.body());
+                showResults(query, response.body());
             }
 
             @Override
-            public void onFailure(
-                    @NonNull Call<SearchResponse> call,
-                    @NonNull Throwable error
-            ) {
-                if (binding == null || call.isCanceled()) return;
-
+            public void onFailure(@NonNull Call<SearchResponse> failed, @NonNull Throwable error) {
+                if (binding == null || failed.isCanceled()) return;
                 binding.searchProgress.setVisibility(View.GONE);
-                showMessage("Could not connect to the backend.");
+                showError(query);
             }
         });
     }
 
-    private void showResult(SearchResponse data){
+    private void showResults(String query, SearchResponse data) {
         List<Track> tracks = data.tracks;
         List<Artist> artists = data.artists;
         List<Album> albums = data.albums;
-
-        if (tracks != null && !tracks.isEmpty()) {
-            binding.tracksSection.setVisibility(View.VISIBLE);
-            binding.tracksContainer.setVisibility(View.VISIBLE);
-
+        if (section(binding.searchTracksHeader, binding.tracksSection, R.string.search_songs, tracks)) {
             for (Track track : tracks) {
-                addResultRow(
-                        binding.tracksContainer,
-                        track.title,
-                        safeText(track.artistName, "Unknown artist")
-                        + " . " + (track.playable ? formatDuration(track.durationSeconds) : "Unplayable")
-                );
+                CatalogViews.songRow(binding.tracksContainer, track.title,
+                        track.playable ? CatalogViews.trackSubtitle(track.artistName, track.durationSeconds)
+                                : getString(R.string.unplayable),
+                        track.coverUrl, track.playable ? R.drawable.ic_play : 0,
+                        track.playable ? () -> {
+                            recent.add(query);
+                            ((MainActivity) requireActivity()).playCatalogTracks(tracks, track);
+                        } : null);
             }
         }
-
-        if (artists != null && !artists.isEmpty()) {
-            binding.artistsSection.setVisibility(View.VISIBLE);
-            binding.artistsContainer.setVisibility(View.VISIBLE);
-
+        if (section(binding.searchArtistsHeader, binding.artistsSection, R.string.search_artists, artists)) {
             for (Artist artist : artists) {
-                addResultRow(
-                        binding.artistsContainer,
-                        artist.name,
-                        "Artist"
-                );
+                ItemSongRowBinding row = CatalogViews.songRow(binding.artistsContainer, artist.name,
+                        getString(R.string.label_artist), artist.coverUrl, R.drawable.ic_chevron_right, () -> {
+                            recent.add(query);
+                            CatalogViews.open(binding.getRoot(), R.id.artistDetailFragment, "artistId", artist.id);
+                        });
+                row.songArtwork.setShapeAppearanceModel(row.songArtwork.getShapeAppearanceModel()
+                        .withCornerSize(new com.google.android.material.shape.RelativeCornerSize(0.5f)));
+                if (artist.coverUrl == null) row.songArtwork.setImageResource(R.drawable.ic_user);
             }
         }
-
-        if (albums != null && !albums.isEmpty()) {
-            binding.albumsSection.setVisibility(View.VISIBLE);
-            binding.albumsContainer.setVisibility(View.VISIBLE);
-
-            for (Album album : albums){
-                addResultRow(
-                        binding.albumsContainer,
-                        album.title,
-                        safeText(album.artistName, "Unknown artist")
-                );
+        if (section(binding.searchAlbumsHeader, binding.albumsSection, R.string.search_albums, albums)) {
+            for (Album album : albums) {
+                String subtitle = (album.artistName == null ? "" : album.artistName + " · ")
+                        + getString(R.string.label_album)
+                        + (album.releaseDate == null || album.releaseDate.length() < 4
+                                ? "" : " · " + album.releaseDate.substring(0, 4));
+                CatalogViews.songRow(binding.albumsContainer, album.title, subtitle, album.coverUrl,
+                        R.drawable.ic_chevron_right, () -> {
+                            recent.add(query);
+                            CatalogViews.open(binding.getRoot(), R.id.albumDetailFragment, "albumId", album.id);
+                        });
             }
         }
-
-        boolean noResults =
-                (tracks == null || tracks.isEmpty())
-                && (artists == null || artists.isEmpty())
-                && (albums == null || albums.isEmpty());
-
-        if (noResults) {
-            showMessage("No results found.");
+        boolean none = isEmpty(tracks) && isEmpty(artists) && isEmpty(albums);
+        if (none) {
+            showState(R.drawable.ic_search, getString(R.string.search_no_results_title),
+                    getString(R.string.search_no_results_message, query), R.string.search_clear,
+                    () -> binding.searchInput.setText(""));
         }
     }
 
-    private void addResultRow(
-            LinearLayout container,
-            String title,
-            String subtitle
-    ) {
-        TextView row = new TextView(requireContext());
-
-        row.setText(safeText(title, "Untitled") + "\n" + subtitle);
-        row.setTextColor(
-                ContextCompat.getColor(requireContext(), R.color.text_primary)
-        );
-        row.setTextSize(14);
-        row.setPadding(dp(14), dp(12), dp(14), dp(12));
-        row.setBackground(makeRowBackground());
-
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        );
-        params.topMargin = dp(8);
-
-        container.addView(row, params);
+    private boolean section(ViewSectionHeaderBinding header, View section, int title, @Nullable List<?> items) {
+        boolean show = !isEmpty(items);
+        section.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show) {
+            header.sectionTitle.setText(title);
+            header.sectionSeeAll.setText(vn.edu.usth.online_music_player.ui.common.CatalogViews.plural(getResources(), 
+                    R.plurals.search_result_count, items.size(), items.size()));
+            header.sectionSeeAll.setClickable(false);
+            header.sectionSeeAll.setBackground(null);
+        }
+        return show;
     }
 
-    private GradientDrawable makeRowBackground() {
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(
-                ContextCompat.getColor(requireContext(), R.color.surface_primary)
-        );
-        background.setCornerRadius(dp(12));
-        return background;
+    private void showError(String query) {
+        showState(R.drawable.ic_wifi_off, getString(R.string.search_error_title),
+                getString(R.string.search_error_message), R.string.now_playing_retry, () -> searchNow(query));
+    }
+
+    private void showState(int icon, String title, String message, int action, Runnable onAction) {
+        binding.searchState.getRoot().setVisibility(View.VISIBLE);
+        binding.searchState.stateIcon.setImageResource(icon);
+        binding.searchState.stateTitle.setText(title);
+        binding.searchState.stateMessage.setText(message);
+        binding.searchState.stateAction.setVisibility(View.VISIBLE);
+        binding.searchState.stateAction.setText(action);
+        binding.searchState.stateAction.setOnClickListener(ignored -> onAction.run());
+    }
+
+    private void renderIdle() {
+        if (binding == null) return;
+        clearResults();
+        binding.searchProgress.setVisibility(View.GONE);
+        binding.searchState.getRoot().setVisibility(View.GONE);
+        binding.searchIdle.setVisibility(View.VISIBLE);
+        renderRecent();
+    }
+
+    private void renderRecent() {
+        binding.searchRecentContainer.removeAllViews();
+        List<String> queries = recent.load();
+        binding.searchRecentSection.setVisibility(queries.isEmpty() ? View.GONE : View.VISIBLE);
+        for (String query : queries) {
+            ItemRecentSearchBinding row = ItemRecentSearchBinding.inflate(
+                    getLayoutInflater(), binding.searchRecentContainer, false);
+            row.recentQuery.setText(query);
+            row.getRoot().setOnClickListener(ignored -> {
+                binding.searchInput.setText(query);
+                binding.searchInput.setSelection(query.length());
+            });
+            row.recentRemove.setContentDescription(getString(R.string.search_remove_recent, query));
+            row.recentRemove.setOnClickListener(ignored -> {
+                recent.remove(query);
+                renderRecent();
+            });
+            binding.searchRecentContainer.addView(row.getRoot());
+        }
+    }
+
+    private void loadSuggestions() {
+        suggestionsCall = ApiClient.catalog().getHome();
+        suggestionsCall.enqueue(new Callback<HomeResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<HomeResponse> call, @NonNull Response<HomeResponse> response) {
+                if (binding == null || response.body() == null || isEmpty(response.body().albums)) return;
+                binding.searchSuggestionsContainer.removeAllViews();
+                List<Album> albums = response.body().albums;
+                for (Album album : albums.subList(0, Math.min(3, albums.size()))) {
+                    CatalogViews.albumTile(binding.searchSuggestionsContainer, album.title, album.artistName,
+                            album.coverUrl, () -> CatalogViews.open(binding.getRoot(),
+                                    R.id.albumDetailFragment, "albumId", album.id));
+                }
+                CatalogViews.spread(binding.searchSuggestionsContainer, 12, 3);
+                binding.searchSuggestionsSection.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<HomeResponse> call, @NonNull Throwable error) {
+                // Suggestions are optional; the search field still works without them.
+            }
+        });
     }
 
     private void clearResults() {
-        if (binding == null) return;
-
         binding.tracksContainer.removeAllViews();
         binding.artistsContainer.removeAllViews();
         binding.albumsContainer.removeAllViews();
-
         binding.tracksSection.setVisibility(View.GONE);
-        binding.tracksContainer.setVisibility(View.GONE);
         binding.artistsSection.setVisibility(View.GONE);
-        binding.artistsContainer.setVisibility(View.GONE);
         binding.albumsSection.setVisibility(View.GONE);
-        binding.albumsContainer.setVisibility(View.GONE);
     }
 
-    private void showMessage(String message) {
-        if (binding == null) return;
-
-        binding.searchMessage.setText(message);
-        binding.searchMessage.setVisibility(View.VISIBLE);
+    private String currentQuery() {
+        return binding.searchInput.getText() == null ? "" : binding.searchInput.getText().toString().trim();
     }
 
-    private String safeText(String value, String fallback) {
-        return value == null || value.trim().isEmpty() ? fallback : value;
+    private static void hideSeeAll(ViewSectionHeaderBinding header, int title) {
+        header.sectionTitle.setText(title);
+        header.sectionSeeAll.setVisibility(View.GONE);
     }
 
-    private String formatDuration(int seconds) {
-        return String.format(
-                Locale.getDefault(),
-                "%d:%02d",
-                seconds / 60,
-                seconds % 60
-        );
+    private static boolean isEmpty(@Nullable List<?> items) {
+        return items == null || items.isEmpty();
     }
 
-    private int dp(int value) {
-        return Math.round(
-                value * requireContext()
-                        .getResources()
-                        .getDisplayMetrics()
-                        .density
-        );
-    }
     @Override
     public void onDestroyView() {
-        if (pendingSearch != null) {
-            searchHandler.removeCallbacks(pendingSearch);
-        }
-
-        if (activeSearch != null) {
-            activeSearch.cancel();
-        }
-
+        if (pendingSearch != null) searchHandler.removeCallbacks(pendingSearch);
+        if (activeSearch != null) activeSearch.cancel();
+        if (suggestionsCall != null) suggestionsCall.cancel();
         binding = null;
         super.onDestroyView();
     }

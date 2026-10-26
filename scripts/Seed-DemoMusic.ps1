@@ -19,8 +19,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed. Requires Python pip 22.3 or newer.' }
     }
     if (-not $DownloadOnly -and -not $VerifyOnly) {
-        & docker compose up -d db
-        if ($LASTEXITCODE -ne 0) { throw 'PostgreSQL startup failed.' }
+        & docker compose up -d db minio
+        if ($LASTEXITCODE -ne 0) { throw 'PostgreSQL/MinIO startup failed.' }
         & docker compose run --rm migrate
         if ($LASTEXITCODE -ne 0) { throw 'Database migration failed.' }
     }

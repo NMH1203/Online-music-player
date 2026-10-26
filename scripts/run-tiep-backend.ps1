@@ -5,6 +5,14 @@ if (-not $env:JAVA_HOME) {
     $studioJdk = Join-Path $env:ProgramFiles 'Android\Android Studio\jbr'
     if (Test-Path -LiteralPath $studioJdk) { $env:JAVA_HOME = $studioJdk }
 }
+$rootEnv = Join-Path $repoPath '.env'
+if ((Test-Path -LiteralPath $rootEnv) -and (-not $env:AUTH_JWT_SECRET)) {
+    Get-Content -LiteralPath $rootEnv | ForEach-Object {
+        if ($_ -match '^AUTH_JWT_SECRET=(.+)$') {
+            $env:AUTH_JWT_SECRET = $Matches[1].Trim()
+        }
+    }
+}
 if (-not $env:AUTH_JWT_SECRET) {
     $runtimePath = Join-Path $repoPath 'runtime'
     New-Item -ItemType Directory -Path $runtimePath -Force | Out-Null

@@ -30,6 +30,52 @@
         tools:layout="@layout/fragment_profile" />
 
     <fragment
+        android:id="@+id/sign_in_fragment"
+        android:name="vn.edu.usth.online_music_player.ui.auth.SignInFragment"
+        android:label="@string/auth_action_sign_in"
+        tools:layout="@layout/fragment_sign_in">
+        <action
+            android:id="@+id/action_sign_in_to_create_account"
+            app:destination="@id/create_account_fragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/create_account_fragment"
+        android:name="vn.edu.usth.online_music_player.ui.auth.CreateAccountFragment"
+        android:label="@string/auth_action_create_account"
+        tools:layout="@layout/fragment_create_account" />
+
+    <fragment
+        android:id="@+id/now_playing_fragment"
+        android:name="vn.edu.usth.online_music_player.ui.player.NowPlayingFragment"
+        android:label="@string/now_playing_label"
+        tools:layout="@layout/fragment_now_playing" />
+
+    <fragment
+        android:id="@+id/queue_fragment"
+        android:name="vn.edu.usth.online_music_player.ui.player.QueueFragment"
+        android:label="@string/queue_title"
+        tools:layout="@layout/fragment_queue" />
+
+    <fragment
+        android:id="@+id/history_fragment"
+        android:name="vn.edu.usth.online_music_player.ui.history.HistoryFragment"
+        android:label="@string/history_title"
+        tools:layout="@layout/fragment_history" />
+
+    <fragment
+        android:id="@+id/my_playlists_fragment"
+        android:name="vn.edu.usth.online_music_player.ui.playlist.MyPlaylistsFragment"
+        android:label="@string/lib_my_playlists"
+        tools:layout="@layout/fragment_my_playlists" />
+
+    <fragment
+        android:id="@+id/create_playlist_fragment"
+        android:name="vn.edu.usth.online_music_player.ui.playlist.CreatePlaylistFragment"
+        android:label="@string/create_playlist_title"
+        tools:layout="@layout/fragment_create_playlist" />
+
+    <fragment
         android:id="@+id/playlist_detail_fragment"
         android:name="vn.edu.usth.online_music_player.ui.playlist.PlaylistDetailFragment"
         android:label="@string/playlist_detail_title"
@@ -37,6 +83,10 @@
         <argument
             android:name="playlistId"
             app:argType="string" />
+        <argument
+            android:name="justCreated"
+            android:defaultValue="false"
+            app:argType="boolean" />
     </fragment>
 
     <fragment
@@ -46,6 +96,32 @@
         tools:layout="@layout/fragment_playlist_track_picker">
         <argument
             android:name="playlistId"
+            app:argType="string" />
+        <argument
+            android:name="playlistName"
+            android:defaultValue=""
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/artistDetailFragment"
+        android:name="vn.edu.usth.online_music_player.ui.artist.ArtistDetailFragment"
+        android:label="Artist"
+        tools:layout="@layout/fragment_artist_detail">
+
+        <argument
+            android:name="artistId"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/albumDetailFragment"
+        android:name="vn.edu.usth.online_music_player.ui.album.AlbumDetailFragment"
+        android:label="Album"
+        tools:layout="@layout/fragment_album_detail">
+
+        <argument
+            android:name="albumId"
             app:argType="string" />
     </fragment>
 </navigation>

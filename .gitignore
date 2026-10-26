@@ -19,6 +19,7 @@ runtime/
 __pycache__/
 *.pyc
 .env.*
+!.env.example
 storage/minio.license
 storage/backend.env
 .venv/
@@ -29,3 +30,7 @@ Thumbs.db
 *.dump
 # local database backups (T31)
 backups/
+
+# Local Python env and private audio not licensed for redistribution
+venv/
+song/

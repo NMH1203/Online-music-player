@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma album track row: index, title, duration. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="56dp"
+    android:background="?attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/track_index"
+        android:layout_width="28dp"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.App.Caption"
+        tools:text="2" />
+
+    <TextView
+        android:id="@+id/track_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textAppearance="@style/TextAppearance.App.Body"
+        tools:text="Midnight Lines" />
+
+    <TextView
+        android:id="@+id/track_duration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:textAppearance="@style/TextAppearance.App.Caption"
+        tools:text="3:36" />
+</LinearLayout>

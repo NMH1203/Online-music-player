@@ -6,7 +6,11 @@ import java.util.UUID;
 record TrackPlayback(
         UUID id,
         String title,
+        UUID artistId,
         String artistName,
+        UUID albumId,
+        String albumTitle,
+        String coverUrl,
         int durationSeconds,
         String mimeType,
         long fileSizeBytes,

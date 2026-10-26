@@ -40,6 +40,14 @@ public final class LibraryRepository {
         enqueueList(api.getPlaylists(), accumulator::setPlaylists, accumulator);
     }
 
+    public void addFavoriteTrack(String trackId, ActionCallback callback) {
+        enqueueAction(api.addFavoriteTrack(trackId), callback);
+    }
+
+    public void addFavoriteAlbum(String albumId, ActionCallback callback) {
+        enqueueAction(api.addFavoriteAlbum(albumId), callback);
+    }
+
     public void removeFavoriteTrack(String trackId, ActionCallback callback) {
         enqueueAction(api.removeFavoriteTrack(trackId), callback);
     }

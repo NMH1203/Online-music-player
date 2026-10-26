@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma "Create playlist – name form" (32:803). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_primary"
+    android:orientation="vertical">
+
+    <include
+        android:id="@+id/create_playlist_top_bar"
+        layout="@layout/view_detail_top_bar" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="24dp">
+
+            <ImageView
+                android:layout_width="116dp"
+                android:layout_height="116dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/bg_mini_player"
+                android:importantForAccessibility="no"
+                android:padding="36dp"
+                android:src="@drawable/ic_queue"
+                app:tint="@color/icon_secondary" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:gravity="center"
+                android:text="@string/create_playlist_caption"
+                android:textAppearance="@style/TextAppearance.App.Body"
+                android:textColor="@color/text_secondary" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="40dp"
+                android:labelFor="@id/create_playlist_name"
+                android:text="@string/create_playlist_label"
+                android:textAppearance="@style/TextAppearance.App.Body" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/create_playlist_name_layout"
+                style="@style/Widget.App.TextField"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:helperTextEnabled="true"
+                app:helperTextTextColor="@color/text_secondary"
+                app:hintEnabled="false">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/create_playlist_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/playlist_name_hint"
+                    android:imeOptions="actionDone"
+                    android:inputType="textCapSentences"
+                    android:maxLength="50"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_muted" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp">
+
+                <Button
+                    android:id="@+id/create_playlist_submit"
+                    style="@style/Widget.App.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/create_playlist_title" />
+
+                <ProgressBar
+                    android:id="@+id/create_playlist_progress"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:elevation="8dp"
+                    android:indeterminateTint="@color/background_primary"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/create_playlist_quota"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                android:textAppearance="@style/TextAppearance.App.Caption"
+                android:visibility="gone" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

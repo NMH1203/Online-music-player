@@ -9,14 +9,21 @@ import org.springframework.stereotype.Component;
 @Component
 public class CurrentUserId {
     public UUID require(Principal principal) {
-        if (principal == null || principal.getName() == null) {
+        UUID userId = optional(principal);
+        if (userId == null) {
             throw unauthenticated();
         }
+        return userId;
+    }
 
+    public UUID optional(Principal principal) {
+        if (principal == null || principal.getName() == null) {
+            return null;
+        }
         try {
             return UUID.fromString(principal.getName());
         } catch (IllegalArgumentException exception) {
-            throw unauthenticated();
+            return null;
         }
     }
 

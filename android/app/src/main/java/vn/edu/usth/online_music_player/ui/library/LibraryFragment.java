@@ -1,87 +1,78 @@
 package vn.edu.usth.online_music_player.ui.library;
 
-import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
-import android.text.InputFilter;
-import android.text.InputType;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
-import android.widget.EditText;
-import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.core.widget.ImageViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
+import vn.edu.usth.online_music_player.MainActivity;
 import vn.edu.usth.online_music_player.R;
 import vn.edu.usth.online_music_player.data.library.FavoriteAlbum;
 import vn.edu.usth.online_music_player.data.library.FavoriteTrack;
 import vn.edu.usth.online_music_player.data.library.LibraryContent;
 import vn.edu.usth.online_music_player.data.library.LibraryRepository;
 import vn.edu.usth.online_music_player.data.library.PlaylistSummary;
-import vn.edu.usth.online_music_player.data.playlist.PlaylistRepository;
 import vn.edu.usth.online_music_player.data.playlist.PlaylistQuota;
+import vn.edu.usth.online_music_player.data.playlist.PlaylistRepository;
 import vn.edu.usth.online_music_player.databinding.FragmentLibraryBinding;
-import vn.edu.usth.online_music_player.databinding.ItemLibraryEntryBinding;
+import vn.edu.usth.online_music_player.databinding.ItemLibrarySummaryBinding;
+import vn.edu.usth.online_music_player.databinding.ItemSongRowBinding;
+import vn.edu.usth.online_music_player.databinding.ViewSectionHeaderBinding;
+import vn.edu.usth.online_music_player.ui.common.CatalogViews;
+import vn.edu.usth.online_music_player.ui.playlist.PlaylistLimitSheet;
 
+/** Figma "Your library": liked songs, liked albums and my playlists, or the empty state. */
 public class LibraryFragment extends Fragment {
+    private static final int PLAYLIST_PREVIEW = 3;
+    private final PlaylistRepository playlistRepository = new PlaylistRepository();
     private FragmentLibraryBinding binding;
     private LibraryViewModel viewModel;
-    private final PlaylistRepository playlistRepository = new PlaylistRepository();
-    private PlaylistQuota playlistQuota;
+    @Nullable private PlaylistQuota playlistQuota;
 
     @Nullable
     @Override
-    public View onCreateView(
-            @NonNull LayoutInflater inflater,
-            @Nullable ViewGroup container,
-            @Nullable Bundle savedInstanceState
-    ) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
         binding = FragmentLibraryBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
         viewModel = new ViewModelProvider(this).get(LibraryViewModel.class);
-        binding.libraryRefresh.setColorSchemeColors(
-                ContextCompat.getColor(requireContext(), R.color.accent_primary));
+        binding.libraryRefresh.setColorSchemeColors(ContextCompat.getColor(requireContext(), R.color.accent_primary));
+        binding.libraryRefresh.setProgressBackgroundColorSchemeResource(R.color.surface_secondary);
         binding.libraryRefresh.setOnRefreshListener(viewModel::refresh);
         binding.libraryRetry.setOnClickListener(ignored -> viewModel.refresh());
-        binding.createPlaylistButton.setOnClickListener(ignored -> onCreatePlaylistClicked());
+        binding.createPlaylistButton.setOnClickListener(ignored -> PlaylistLimitSheet.startCreate(this, playlistQuota));
+        summary(binding.summarySongs, R.drawable.ic_heart, R.string.lib_liked_songs);
+        summary(binding.summaryAlbums, R.drawable.ic_album, R.string.lib_liked_albums);
+        summary(binding.summaryPlaylists, R.drawable.ic_queue, R.string.lib_my_playlists);
+        binding.libraryEmptyState.stateIcon.setImageResource(R.drawable.ic_headphones);
+        binding.libraryEmptyState.stateTitle.setText(R.string.lib_empty_title);
+        binding.libraryEmptyState.stateMessage.setText(R.string.lib_empty_message);
         viewModel.getState().observe(getViewLifecycleOwner(), this::render);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        if (viewModel != null) {
-            viewModel.refresh();
-        }
+        viewModel.refresh();
         loadPlaylistQuota();
     }
 
-    @Override
-    public void onDestroyView() {
-        binding = null;
-        super.onDestroyView();
-    }
-
     private void render(LibraryUiState state) {
-        if (binding == null) {
-            return;
-        }
-
+        if (binding == null) return;
         LibraryContent content = state.getContent();
         if (content != null) {
             binding.libraryStatusPanel.setVisibility(View.GONE);
@@ -90,386 +81,146 @@ public class LibraryFragment extends Fragment {
             renderContent(content);
             return;
         }
-
         binding.libraryRefresh.setRefreshing(false);
         binding.librarySections.setVisibility(View.GONE);
         binding.libraryStatusPanel.setVisibility(View.VISIBLE);
-
-        switch (state.getStatus()) {
-            case LOADING:
-                binding.libraryProgress.setVisibility(View.VISIBLE);
-                binding.libraryStatusTitle.setText(R.string.library_loading_title);
-                binding.libraryStatusMessage.setText(R.string.library_loading_message);
-                binding.libraryRetry.setVisibility(View.GONE);
-                break;
-            case AUTHENTICATION_REQUIRED:
-                binding.libraryProgress.setVisibility(View.GONE);
-                binding.libraryStatusTitle.setText(R.string.library_auth_title);
-                binding.libraryStatusMessage.setText(R.string.library_auth_message);
-                binding.libraryRetry.setVisibility(View.GONE);
-                break;
-            case ERROR:
-            default:
-                binding.libraryProgress.setVisibility(View.GONE);
-                binding.libraryStatusTitle.setText(R.string.library_error_title);
-                binding.libraryStatusMessage.setText(R.string.library_error_message);
-                binding.libraryRetry.setVisibility(View.VISIBLE);
-                break;
-        }
+        boolean loading = state.getStatus() == LibraryUiState.Status.LOADING;
+        boolean error = !loading && state.getStatus() != LibraryUiState.Status.AUTHENTICATION_REQUIRED;
+        binding.libraryProgress.setVisibility(loading ? View.VISIBLE : View.GONE);
+        binding.libraryRetry.setVisibility(error ? View.VISIBLE : View.GONE);
+        binding.libraryStatusTitle.setText(loading ? R.string.lib_loading
+                : error ? R.string.lib_error_title : R.string.lib_auth_title);
+        binding.libraryStatusMessage.setText(error ? getString(R.string.lib_error_message) : "");
     }
 
     private void renderContent(LibraryContent content) {
-        renderPlaylistQuota(playlistQuota);
         List<FavoriteTrack> tracks = content.getFavoriteTracks();
-        binding.tracksSectionTitle.setText(
-                getString(R.string.library_tracks_title, tracks.size()));
-        binding.tracksList.removeAllViews();
-        if (tracks.isEmpty()) {
-            addEmptyState(binding.tracksList,
-                    R.string.library_tracks_empty_title,
-                    R.string.library_tracks_empty_message);
-        } else {
-            for (FavoriteTrack track : tracks) {
-                String subtitle = nonEmpty(track.getArtistName(),
-                        getString(R.string.library_unknown_artist));
-                if (hasText(track.getAlbumTitle())) {
-                    subtitle = subtitle + " · " + track.getAlbumTitle();
-                }
-                View row = createEntry(track.getTitle(), subtitle, track.getId(), true,
-                        () -> removeTrack(track));
-                binding.tracksList.addView(row);
-            }
-        }
-
         List<FavoriteAlbum> albums = content.getFavoriteAlbums();
-        binding.albumsSectionTitle.setText(
-                getString(R.string.library_albums_title, albums.size()));
-        binding.albumsList.removeAllViews();
-        if (albums.isEmpty()) {
-            addEmptyState(binding.albumsList,
-                    R.string.library_albums_empty_title,
-                    R.string.library_albums_empty_message);
-        } else {
-            for (FavoriteAlbum album : albums) {
-                String subtitle = nonEmpty(album.getArtistName(),
-                        getString(R.string.library_unknown_artist));
-                View row = createEntry(album.getTitle(), subtitle, album.getId(), true,
-                        () -> removeAlbum(album));
-                binding.albumsList.addView(row);
-            }
+        List<PlaylistSummary> playlists = content.getPlaylists();
+        boolean empty = tracks.isEmpty() && albums.isEmpty() && playlists.isEmpty();
+
+        binding.libraryEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
+        binding.libraryEmptyHint.setVisibility(empty ? View.VISIBLE : View.GONE);
+        // Figma: a filled primary button on the empty page, an outlined one under the lists.
+        binding.createPlaylistButton.setBackgroundTintList(ContextCompat.getColorStateList(requireContext(),
+                empty ? R.color.text_primary : android.R.color.transparent));
+        binding.createPlaylistButton.setTextColor(ContextCompat.getColor(requireContext(),
+                empty ? R.color.background_primary : R.color.text_primary));
+        binding.createPlaylistButton.setIconTint(ContextCompat.getColorStateList(requireContext(),
+                empty ? R.color.background_primary : R.color.text_primary));
+        if (empty) {
+            binding.summarySongs.summaryCount.setText(vn.edu.usth.online_music_player.ui.common.CatalogViews.plural(getResources(), R.plurals.queue_song_count, 0, 0));
+            binding.summaryAlbums.summaryCount.setText(vn.edu.usth.online_music_player.ui.common.CatalogViews.plural(getResources(), R.plurals.lib_album_count, 0, 0));
+            binding.summaryPlaylists.summaryCount.setText(vn.edu.usth.online_music_player.ui.common.CatalogViews.plural(getResources(), R.plurals.lib_playlist_count, 0, 0));
         }
 
-        List<PlaylistSummary> playlists = content.getPlaylists();
-        binding.playlistsSectionTitle.setText(
-                getString(R.string.library_playlists_title, playlists.size()));
+        binding.tracksSection.setVisibility(tracks.isEmpty() ? View.GONE : View.VISIBLE);
+        header(binding.tracksHeader, R.string.lib_liked_songs,
+                vn.edu.usth.online_music_player.ui.common.CatalogViews.plural(getResources(), R.plurals.queue_song_count, tracks.size(), tracks.size()), null);
+        binding.tracksList.removeAllViews();
+        List<String> trackIds = new ArrayList<>();
+        for (FavoriteTrack track : tracks) trackIds.add(track.getId());
+        for (int i = 0; i < tracks.size(); i++) {
+            FavoriteTrack track = tracks.get(i);
+            int start = i;
+            ItemSongRowBinding row = CatalogViews.songRow(binding.tracksList, track.getTitle(),
+                    CatalogViews.trackSubtitle(track.getArtistName(), track.getDurationSeconds()), null,
+                    R.drawable.ic_heart, () -> ((MainActivity) requireActivity()).playTrackIds(trackIds, start));
+            ImageViewCompat.setImageTintList(row.songAction,
+                    ContextCompat.getColorStateList(requireContext(), R.color.accent_primary));
+            row.songAction.setClickable(true);
+            row.songAction.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+            row.songAction.setContentDescription(getString(R.string.lib_unlike_song, track.getTitle()));
+            row.songAction.setOnClickListener(ignored -> removeTrack(track));
+        }
+
+        binding.albumsSection.setVisibility(albums.isEmpty() ? View.GONE : View.VISIBLE);
+        header(binding.albumsHeader, R.string.lib_liked_albums,
+                vn.edu.usth.online_music_player.ui.common.CatalogViews.plural(getResources(), R.plurals.lib_album_count, albums.size(), albums.size()), null);
+        binding.albumsList.removeAllViews();
+        for (FavoriteAlbum album : albums) {
+            View tile = CatalogViews.albumTile(binding.albumsList, album.getTitle(), album.getArtistName(), null,
+                    () -> CatalogViews.open(binding.getRoot(), R.id.albumDetailFragment, "albumId", album.getId()))
+                    .getRoot();
+            tile.setOnLongClickListener(ignored -> {
+                removeAlbum(album);
+                return true;
+            });
+            ((LinearLayout.LayoutParams) tile.getLayoutParams()).setMarginEnd(CatalogViews.dp(tile, 16));
+        }
+
+        binding.playlistsSection.setVisibility(playlists.isEmpty() ? View.GONE : View.VISIBLE);
+        String playlistCount = vn.edu.usth.online_music_player.ui.common.CatalogViews.plural(getResources(), R.plurals.lib_playlist_count, playlists.size(), playlists.size());
+        header(binding.playlistsHeader, R.string.lib_my_playlists, playlists.size() > PLAYLIST_PREVIEW
+                ? getString(R.string.lib_count_see_all, playlistCount) : playlistCount,
+                playlists.size() > PLAYLIST_PREVIEW ? () -> Navigation.findNavController(binding.getRoot())
+                        .navigate(R.id.my_playlists_fragment) : null);
         binding.playlistsList.removeAllViews();
-        if (playlists.isEmpty()) {
-            addEmptyState(binding.playlistsList,
-                    R.string.library_playlists_empty_title,
-                    R.string.library_playlists_empty_message);
-        } else {
-            for (PlaylistSummary playlist : playlists) {
-                String subtitle = hasText(playlist.getDescription())
-                        ? playlist.getDescription()
-                        : getString(R.string.library_playlist_track_count, playlist.getTrackCount());
-                View row = createEntry(playlist.getName(), subtitle, null, false, null);
-                row.setClickable(true);
-                row.setFocusable(true);
-                row.setOnClickListener(ignored -> openPlaylist(playlist));
-                binding.playlistsList.addView(row);
-            }
+        for (PlaylistSummary playlist : playlists.subList(0, Math.min(PLAYLIST_PREVIEW, playlists.size()))) {
+            playlistRow(binding.playlistsList, playlist);
         }
     }
 
-    private void onCreatePlaylistClicked() {
-        if (playlistQuota != null && !playlistQuota.canCreatePlaylist()) {
-            showPlaylistLimitDialog();
-            return;
-        }
-        showCreatePlaylistDialog();
+    /** Shared with My playlists: artwork placeholder, name, song count and a chevron. */
+    public static void playlistRow(ViewGroup parent, PlaylistSummary playlist) {
+        ItemSongRowBinding row = CatalogViews.songRow(parent, playlist.getName(),
+                vn.edu.usth.online_music_player.ui.common.CatalogViews.plural(parent.getResources(), R.plurals.queue_song_count,
+                        (int) playlist.getTrackCount(), (int) playlist.getTrackCount()),
+                null, R.drawable.ic_chevron_right,
+                () -> CatalogViews.open(parent, R.id.playlist_detail_fragment, "playlistId", playlist.getId()));
+        row.songArtwork.setImageResource(R.drawable.ic_queue);
+    }
+
+    private static void summary(ItemLibrarySummaryBinding row, int icon, int title) {
+        row.summaryIcon.setImageResource(icon);
+        row.summaryTitle.setText(title);
+    }
+
+    private static void header(ViewSectionHeaderBinding header, int title, String meta, @Nullable Runnable onSeeAll) {
+        header.sectionTitle.setText(title);
+        header.sectionSeeAll.setText(meta);
+        header.sectionSeeAll.setClickable(onSeeAll != null);
+        header.sectionSeeAll.setOnClickListener(onSeeAll == null ? null : ignored -> onSeeAll.run());
     }
 
     private void loadPlaylistQuota() {
         playlistRepository.getPlaylistQuota(new PlaylistRepository.ResultCallback<PlaylistQuota>() {
             @Override
             public void onSuccess(PlaylistQuota result) {
-                if (!isAdded() || binding == null) {
-                    return;
-                }
                 playlistQuota = result;
-                renderPlaylistQuota(result);
             }
 
             @Override
             public void onFailure(PlaylistRepository.FailureType failureType) {
-                if (!isAdded() || binding == null) {
-                    return;
-                }
                 playlistQuota = null;
-                renderPlaylistQuota(null);
             }
         });
-    }
-
-    private void renderPlaylistQuota(@Nullable PlaylistQuota quota) {
-        if (binding == null) {
-            return;
-        }
-        binding.playlistQuota.setVisibility(View.VISIBLE);
-        if (quota == null) {
-            binding.playlistQuota.setText(R.string.playlist_quota_unavailable);
-            binding.createPlaylistButton.setText(R.string.playlist_create);
-            return;
-        }
-        Integer maxPlaylists = quota.getMaxPlaylists();
-        if (maxPlaylists == null) {
-            binding.playlistQuota.setText(R.string.playlist_quota_unlimited);
-            binding.createPlaylistButton.setText(R.string.playlist_create);
-        } else if (!quota.canCreatePlaylist()) {
-            binding.playlistQuota.setText(
-                    getString(R.string.playlist_quota_reached, maxPlaylists));
-            binding.createPlaylistButton.setText(R.string.playlist_quota_button);
-        } else {
-            binding.playlistQuota.setText(getString(
-                    R.string.playlist_quota_remaining,
-                    quota.getPlaylistCount(),
-                    maxPlaylists,
-                    maxPlaylists - quota.getPlaylistCount()));
-            binding.createPlaylistButton.setText(R.string.playlist_create);
-        }
-    }
-
-    private void showPlaylistLimitDialog() {
-        if (!isAdded()) {
-            return;
-        }
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.playlist_quota_title)
-                .setMessage(R.string.playlist_quota_message)
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
-    }
-
-    private void showCreatePlaylistDialog() {
-        LinearLayout form = new LinearLayout(requireContext());
-        form.setOrientation(LinearLayout.VERTICAL);
-        int horizontalPadding = dp(24);
-        form.setPadding(horizontalPadding, dp(8), horizontalPadding, 0);
-
-        EditText nameInput = new EditText(requireContext());
-        nameInput.setSingleLine(true);
-        nameInput.setHint(R.string.playlist_name_hint);
-        nameInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        nameInput.setFilters(new InputFilter[]{new InputFilter.LengthFilter(200)});
-        form.addView(nameInput, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        EditText descriptionInput = new EditText(requireContext());
-        descriptionInput.setHint(R.string.playlist_description_hint);
-        descriptionInput.setInputType(InputType.TYPE_CLASS_TEXT
-                | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
-                | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-        descriptionInput.setMinLines(2);
-        descriptionInput.setFilters(new InputFilter[]{new InputFilter.LengthFilter(2000)});
-        LinearLayout.LayoutParams descriptionParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        descriptionParams.topMargin = dp(8);
-        form.addView(descriptionInput, descriptionParams);
-
-        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.playlist_create_title)
-                .setView(form)
-                .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(R.string.playlist_create, null)
-                .create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(
-                androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(button -> {
-            String name = nameInput.getText() == null ? "" : nameInput.getText().toString().trim();
-            String description = descriptionInput.getText() == null
-                    ? "" : descriptionInput.getText().toString().trim();
-            if (name.isEmpty()) {
-                nameInput.setError(getString(R.string.playlist_name_required));
-                nameInput.requestFocus();
-                return;
-            }
-
-            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setEnabled(false);
-            playlistRepository.createPlaylist(name, description, new PlaylistRepository.ResultCallback<PlaylistSummary>() {
-                @Override
-                public void onSuccess(PlaylistSummary created) {
-                    dialog.dismiss();
-                    if (!isAdded() || binding == null || getView() == null) {
-                        return;
-                    }
-                    if (created == null || !hasText(created.getId())) {
-                        showMessage(getString(R.string.playlist_generic_error));
-                        return;
-                    }
-                    Bundle args = new Bundle();
-                    args.putString("playlistId", created.getId());
-                    Navigation.findNavController(requireView())
-                            .navigate(R.id.playlist_detail_fragment, args);
-                }
-
-                @Override
-                public void onFailure(PlaylistRepository.FailureType failureType) {
-                    if (!isAdded() || binding == null) {
-                        return;
-                    }
-                    dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
-                            .setEnabled(true);
-                    if (failureType == PlaylistRepository.FailureType.PLAYLIST_LIMIT_REACHED) {
-                        dialog.dismiss();
-                        loadPlaylistQuota();
-                        showPlaylistLimitDialog();
-                        return;
-                    }
-                    showMessage(messageFor(failureType));
-                }
-            });
-        }));
-        dialog.show();
-    }
-
-    private void openPlaylist(PlaylistSummary playlist) {
-        if (playlist == null || !hasText(playlist.getId()) || getView() == null) {
-            return;
-        }
-        Bundle args = new Bundle();
-        args.putString("playlistId", playlist.getId());
-        Navigation.findNavController(requireView()).navigate(R.id.playlist_detail_fragment, args);
-    }
-
-    private String messageFor(PlaylistRepository.FailureType failureType) {
-        if (failureType == PlaylistRepository.FailureType.AUTHENTICATION_REQUIRED) {
-            return getString(R.string.playlist_auth_required);
-        }
-        if (failureType == PlaylistRepository.FailureType.PLAYLIST_LIMIT_REACHED) {
-            return getString(R.string.playlist_quota_message);
-        }
-        if (failureType == PlaylistRepository.FailureType.NETWORK) {
-            return getString(R.string.playlist_network_error);
-        }
-        if (failureType == PlaylistRepository.FailureType.NOT_FOUND) {
-            return getString(R.string.playlist_not_found);
-        }
-        return getString(R.string.playlist_generic_error);
-    }
-
-    private void showMessage(String message) {
-        if (binding != null) {
-            Snackbar.make(binding.getRoot(), message, Snackbar.LENGTH_LONG).show();
-        }
-    }
-
-    private View createEntry(
-            String title,
-            String subtitle,
-            @Nullable String favoriteId,
-            boolean favorite,
-            @Nullable Runnable removeAction
-    ) {
-        ItemLibraryEntryBinding row = ItemLibraryEntryBinding.inflate(
-                LayoutInflater.from(requireContext()), null, false);
-        row.entryArtwork.setText(firstGlyph(title));
-        row.entryTitle.setText(nonEmpty(title, getString(R.string.library_untitled_item)));
-        row.entrySubtitle.setText(subtitle);
-        if (favorite && favoriteId != null && removeAction != null) {
-            row.entryAction.setVisibility(View.VISIBLE);
-            row.entryAction.setOnClickListener(ignored -> removeAction.run());
-        } else {
-            row.entryAction.setVisibility(View.GONE);
-        }
-        return row.getRoot();
-    }
-
-    private void addEmptyState(LinearLayout container, int titleResource, int messageResource) {
-        LinearLayout card = new LinearLayout(requireContext());
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(16), dp(15), dp(16), dp(15));
-        card.setBackgroundResource(R.drawable.bg_library_empty);
-
-        TextView title = new TextView(requireContext());
-        title.setText(titleResource);
-        title.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary));
-        title.setTextSize(14);
-        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-
-        TextView message = new TextView(requireContext());
-        message.setLayoutParams(new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        LinearLayout.LayoutParams messageParams = (LinearLayout.LayoutParams) message.getLayoutParams();
-        messageParams.topMargin = dp(5);
-        message.setLayoutParams(messageParams);
-        message.setText(messageResource);
-        message.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary));
-        message.setTextSize(13);
-
-        card.addView(title);
-        card.addView(message);
-        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        cardParams.bottomMargin = dp(8);
-        container.addView(card, cardParams);
     }
 
     private void removeTrack(FavoriteTrack track) {
-        if (track.getId() == null) {
-            return;
-        }
-        viewModel.removeFavoriteTrack(track.getId(), (succeeded, failureType) -> {
-            if (binding == null) {
-                return;
-            }
-            int message = succeeded
-                    ? R.string.library_removed_track
-                    : failureType == LibraryRepository.FailureType.AUTHENTICATION_REQUIRED
-                            ? R.string.library_sign_in_again
-                            : R.string.library_action_failed;
-            String text = succeeded
-                    ? getString(message, nonEmpty(track.getTitle(), getString(R.string.library_untitled_item)))
-                    : getString(message);
-            Snackbar.make(binding.getRoot(), text, Snackbar.LENGTH_SHORT).show();
-        });
+        if (track.getId() == null) return;
+        viewModel.removeFavoriteTrack(track.getId(), (succeeded, failureType) ->
+                notifyRemoval(succeeded, failureType, R.string.library_removed_track, track.getTitle()));
     }
 
     private void removeAlbum(FavoriteAlbum album) {
-        if (album.getId() == null) {
-            return;
-        }
-        viewModel.removeFavoriteAlbum(album.getId(), (succeeded, failureType) -> {
-            if (binding == null) {
-                return;
-            }
-            int message = succeeded
-                    ? R.string.library_removed_album
-                    : failureType == LibraryRepository.FailureType.AUTHENTICATION_REQUIRED
-                            ? R.string.library_sign_in_again
-                            : R.string.library_action_failed;
-            String text = succeeded
-                    ? getString(message, nonEmpty(album.getTitle(), getString(R.string.library_untitled_item)))
-                    : getString(message);
-            Snackbar.make(binding.getRoot(), text, Snackbar.LENGTH_SHORT).show();
-        });
+        if (album.getId() == null) return;
+        viewModel.removeFavoriteAlbum(album.getId(), (succeeded, failureType) ->
+                notifyRemoval(succeeded, failureType, R.string.library_removed_album, album.getTitle()));
     }
 
-    private String firstGlyph(@Nullable String title) {
-        if (!hasText(title)) {
-            return "♫";
-        }
-        int firstCodePoint = title.trim().codePointAt(0);
-        return new String(Character.toChars(firstCodePoint)).toUpperCase(Locale.getDefault());
+    private void notifyRemoval(boolean succeeded, @Nullable LibraryRepository.FailureType failureType,
+            int successMessage, @Nullable String title) {
+        if (binding == null) return;
+        String text = succeeded ? getString(successMessage, title == null ? "" : title)
+                : getString(failureType == LibraryRepository.FailureType.AUTHENTICATION_REQUIRED
+                        ? R.string.library_sign_in_again : R.string.library_action_failed);
+        Snackbar.make(binding.getRoot(), text, Snackbar.LENGTH_SHORT).show();
     }
 
-    private String nonEmpty(@Nullable String value, String fallback) {
-        return hasText(value) ? value.trim() : fallback;
-    }
-
-    private boolean hasText(@Nullable String value) {
-        return value != null && !value.trim().isEmpty();
-    }
-
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
+    @Override
+    public void onDestroyView() {
+        binding = null;
+        super.onDestroyView();
     }
 }

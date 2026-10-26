@@ -44,7 +44,11 @@ public class PlaybackController {
                 track.mimeType(),
                 track.fileSizeBytes(),
                 "/tracks/" + track.id() + "/stream",
-                track.attributionText());
+                track.attributionText(),
+                track.artistId(),
+                track.albumId(),
+                track.albumTitle(),
+                track.coverUrl());
     }
 
     @GetMapping("/stream")

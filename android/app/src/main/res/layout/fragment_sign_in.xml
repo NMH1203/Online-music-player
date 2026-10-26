@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma "Sign in" (32:54) and "Sign in – error" (32:95). -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_primary"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="48dp"
+        android:paddingBottom="24dp">
+
+        <include layout="@layout/view_auth_brand" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:accessibilityHeading="true"
+            android:text="@string/auth_sign_in_title"
+            android:textAppearance="@style/TextAppearance.App.ScreenTitle" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/auth_sign_in_subtitle"
+            android:textAppearance="@style/TextAppearance.App.Body"
+            android:textColor="@color/text_secondary" />
+
+        <include
+            android:id="@+id/sign_in_error"
+            layout="@layout/view_error_banner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:labelFor="@id/sign_in_email"
+            android:text="@string/auth_label_email"
+            android:textAppearance="@style/TextAppearance.App.Body" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/sign_in_email_layout"
+            style="@style/Widget.App.TextField"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:hintEnabled="false">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/sign_in_email"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="emailAddress"
+                android:hint="@string/auth_hint_email"
+                android:imeOptions="actionNext"
+                android:inputType="textEmailAddress"
+                android:maxLength="320"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_muted" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:labelFor="@id/sign_in_password"
+            android:text="@string/auth_label_password"
+            android:textAppearance="@style/TextAppearance.App.Body" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/sign_in_password_layout"
+            style="@style/Widget.App.TextField"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:endIconMode="password_toggle"
+            app:hintEnabled="false">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/sign_in_password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="password"
+                android:hint="@string/auth_hint_password"
+                android:imeOptions="actionDone"
+                android:inputType="textPassword"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_muted" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp">
+
+            <Button
+                android:id="@+id/sign_in_submit"
+                style="@style/Widget.App.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/auth_action_sign_in" />
+
+            <ProgressBar
+                android:id="@+id/sign_in_progress"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:elevation="8dp"
+                android:indeterminateTint="@color/background_primary"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/auth_prompt_new"
+                android:textAppearance="@style/TextAppearance.App.Body"
+                android:textColor="@color/text_secondary" />
+
+            <TextView
+                android:id="@+id/sign_in_go_create"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="6dp"
+                android:text="@string/auth_action_create_account"
+                android:textAppearance="@style/TextAppearance.App.Body" />
+        </LinearLayout>
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:minHeight="24dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/auth_sign_in_footer"
+            android:textAppearance="@style/TextAppearance.App.Small"
+            android:textColor="@color/text_muted" />
+    </LinearLayout>
+</ScrollView>

@@ -25,6 +25,7 @@
         android:layout_height="wrap_content"
         android:background="@color/nav_bg"
         app:menu="@menu/bottom_nav_menu"
+        app:labelVisibilityMode="labeled"
         app:itemIconTint="@color/bottom_nav_color_selector"
         app:itemTextColor="@color/bottom_nav_color_selector"
         app:itemActiveIndicatorStyle="@style/Widget.App.BottomNavigationView.ActiveIndicator"
@@ -37,6 +38,8 @@
     <include
         android:id="@+id/mini_player"
         layout="@layout/view_mini_player"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/bottom_nav"
         app:layout_constraintStart_toStartOf="parent"
