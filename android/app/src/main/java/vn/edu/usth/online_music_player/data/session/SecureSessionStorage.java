@@ -41,7 +41,7 @@ final class SecureSessionStorage {
         Cipher cipher=Cipher.getInstance("AES/GCM/NoPadding"); cipher.init(Cipher.ENCRYPT_MODE,key());
         String encrypted=Base64.encodeToString(cipher.doFinal(value.getBytes(StandardCharsets.UTF_8)),Base64.NO_WRAP);
         if (!prefs.edit().putString("ciphertext",encrypted).putString("iv",Base64.encodeToString(cipher.getIV(),Base64.NO_WRAP)).commit())
-            throw new java.io.IOException("Không thể lưu phiên đăng nhập an toàn.");
+            throw new java.io.IOException("Couldn't store the session securely.");
     }
     void clear() { prefs.edit().clear().commit(); }
 }

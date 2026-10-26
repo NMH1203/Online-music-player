@@ -16,4 +16,5 @@ public interface AccountApi {
     @POST("demo/payments") Call<Payment> pay(@Body PaymentRequest body);
     @POST("demo/reset-plan") Call<Entitlement> reset();
     @GET("me/history") Call<List<History>> history();
+    @GET("me/stats") Call<Stats> stats();
 }

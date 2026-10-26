@@ -32,6 +32,10 @@ public final class PlaylistRepository {
         enqueue(api.getPlaylist(playlistId), callback);
     }
 
+    public void getPlaylists(ResultCallback<List<PlaylistSummary>> callback) {
+        enqueue(api.getPlaylists(), callback);
+    }
+
     public void createPlaylist(
             String name, String description, ResultCallback<PlaylistSummary> callback) {
         enqueue(api.createPlaylist(new PlaylistWriteRequest(name, description)), callback);

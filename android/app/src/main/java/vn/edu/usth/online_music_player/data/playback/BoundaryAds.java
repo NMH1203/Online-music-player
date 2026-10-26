@@ -17,8 +17,8 @@ import vn.edu.usth.online_music_player.data.session.AccessTokenStore;
 /** Checks the server at a track boundary. Audio ads are ordinary local MediaItems in the same player,
  * so audio focus, background playback and the notification remain under MediaSession control. */
 @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
-final class BoundaryAds {
-    static final String AD_ID="music:demo-ad";
+public final class BoundaryAds {
+    public static final String AD_ID="music:demo-ad";
     private final Context context;
     private final ExoPlayer player;
     private final AccountApi api;
@@ -70,15 +70,15 @@ final class BoundaryAds {
                     player.stop(); player.clearMediaItems(); return;
                 }
                 if(verified==null) {
-                    Toast.makeText(context,"Không kiểm tra được gói. Kiểm tra mạng rồi nhấn Tiếp để thử lại.",Toast.LENGTH_LONG).show();
+                    Toast.makeText(context,R.string.ad_verify_failed,Toast.LENGTH_LONG).show();
                     return;
                 }
                 EntitlementStore.update(verified);
                 if(!verified.adFree) {
                     MediaItem ad=new MediaItem.Builder().setMediaId(AD_ID)
                         .setUri("android.resource://"+context.getPackageName()+"/"+R.raw.demo_audio_ad)
-                        .setMediaMetadata(new MediaMetadata.Builder().setTitle("Quảng cáo mô phỏng")
-                            .setArtist("Premium • Nghe nhạc không quảng cáo").build()).build();
+                        .setMediaMetadata(new MediaMetadata.Builder().setTitle(context.getString(R.string.ad_audio_title))
+                            .setArtist(context.getString(R.string.ad_audio_artist)).build()).build();
                     player.addMediaItem(player.getCurrentMediaItemIndex()+1,ad);
                 }
                 player.seekToNextMediaItem(); player.prepare(); player.play();

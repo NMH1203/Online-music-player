@@ -1,0 +1,12 @@
+*
+!android/
+!android/gradlew
+!android/gradle/
+!android/gradle/wrapper/
+!android/gradle/wrapper/**
+!backend/
+!backend/build.gradle.kts
+!backend/settings.gradle.kts
+!backend/src/
+!backend/src/main/
+!backend/src/main/**

@@ -1,164 +1,138 @@
 package vn.edu.usth.online_music_player.ui.artist;
 
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
-import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-
+import androidx.navigation.Navigation;
+import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-
+import vn.edu.usth.online_music_player.MainActivity;
 import vn.edu.usth.online_music_player.R;
 import vn.edu.usth.online_music_player.data.catalog.ApiClient;
+import vn.edu.usth.online_music_player.data.catalog.CatalogModels.Album;
 import vn.edu.usth.online_music_player.data.catalog.CatalogModels.ArtistDetailResponse;
 import vn.edu.usth.online_music_player.data.catalog.CatalogModels.Track;
-import vn.edu.usth.online_music_player.data.catalog.CatalogModels.Album;
 import vn.edu.usth.online_music_player.databinding.FragmentArtistDetailBinding;
+import vn.edu.usth.online_music_player.databinding.ItemAlbumTileBinding;
+import vn.edu.usth.online_music_player.databinding.ViewSectionHeaderBinding;
+import vn.edu.usth.online_music_player.ui.common.CatalogViews;
 
+/** Figma "Artist detail": portrait, play/shuffle, popular songs and releases. */
 public class ArtistDetailFragment extends Fragment {
-
     private FragmentArtistDetailBinding binding;
     private Call<ArtistDetailResponse> request;
+    private String artistId;
 
     @Nullable
     @Override
-    public View onCreateView(
-            @NonNull LayoutInflater inflater,
-            @Nullable ViewGroup container,
-            @Nullable Bundle savedInstanceState
-    ) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
         binding = FragmentArtistDetailBinding.inflate(inflater, container, false);
-
-        String artistId = requireArguments().getString("artistId");
-
-        if (artistId == null || artistId.isEmpty()) {
-            showMessage("Missing artist ID.");
-        } else {
-            loadArtist(artistId);
-        }
-
         return binding.getRoot();
     }
 
-    private void loadArtist(String artistId) {
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        binding.artistTopBar.topBarTitle.setText(R.string.artist_title_bar);
+        binding.artistTopBar.topBarBack.setOnClickListener(ignored -> Navigation.findNavController(view).navigateUp());
+        binding.artistState.stateAction.setOnClickListener(ignored -> loadArtist());
+        artistId = requireArguments().getString("artistId");
+        loadArtist();
+    }
+
+    private void loadArtist() {
+        if (artistId == null || artistId.isEmpty()) {
+            showError();
+            return;
+        }
         binding.artistDetailProgress.setVisibility(View.VISIBLE);
-        binding.artistDetailMessage.setVisibility(View.GONE);
-
+        binding.artistState.getRoot().setVisibility(View.GONE);
+        binding.artistContent.setVisibility(View.GONE);
         request = ApiClient.catalog().getArtist(artistId);
-
-        request.enqueue(new Callback<>() {
+        request.enqueue(new Callback<ArtistDetailResponse>() {
             @Override
-            public void onResponse(
-                    @NonNull Call<ArtistDetailResponse> call,
-                    @NonNull Response<ArtistDetailResponse> response
-            ) {
+            public void onResponse(@NonNull Call<ArtistDetailResponse> call,
+                    @NonNull Response<ArtistDetailResponse> response) {
                 if (binding == null) return;
-
                 binding.artistDetailProgress.setVisibility(View.GONE);
-
-                if (!response.isSuccessful() || response.body() == null) {
-                    showMessage("Could not load artist. HTTP " + response.code());
+                if (!response.isSuccessful() || response.body() == null || response.body().artist == null) {
+                    showError();
                     return;
                 }
-
-                ArtistDetailResponse data = response.body();
-
-                if (data.artist != null) {
-                    binding.artistName.setText(data.artist.name);
-                    binding.artistBio.setText(
-                            data.artist.bio == null || data.artist.bio.isEmpty()
-                                    ? "No biography available."
-                                    : data.artist.bio
-                    );
-                }
-
-                addTracks(data.tracks);
-                addAlbums(data.albums);
+                render(response.body());
             }
 
             @Override
-            public void onFailure(
-                    @NonNull Call<ArtistDetailResponse> call,
-                    @NonNull Throwable error
-            ) {
+            public void onFailure(@NonNull Call<ArtistDetailResponse> call, @NonNull Throwable error) {
                 if (binding == null || call.isCanceled()) return;
-
                 binding.artistDetailProgress.setVisibility(View.GONE);
-                showMessage("Could not connect to the backend.");
+                showError();
             }
         });
     }
 
-    private void addTracks(List<Track> tracks) {
-        if (tracks == null) return;
+    private void render(ArtistDetailResponse data) {
+        binding.artistContent.setVisibility(View.VISIBLE);
+        binding.artistName.setText(data.artist.name);
+        CatalogViews.cover(binding.artistPortrait, data.artist.coverUrl);
+        if (data.artist.coverUrl == null) binding.artistPortrait.setImageResource(R.drawable.ic_user);
+        boolean hasBio = data.artist.bio != null && !data.artist.bio.trim().isEmpty();
+        binding.artistBio.setVisibility(hasBio ? View.VISIBLE : View.GONE);
+        binding.artistBio.setText(hasBio ? data.artist.bio : "");
 
+        List<Track> tracks = data.tracks == null ? Collections.emptyList() : data.tracks;
+        MainActivity activity = (MainActivity) requireActivity();
+        boolean anyPlayable = !CatalogViews.playableIds(tracks, false).isEmpty();
+        binding.artistPlay.setEnabled(anyPlayable);
+        binding.artistShuffle.setEnabled(anyPlayable);
+        binding.artistPlay.setOnClickListener(ignored -> activity.playTrackIds(CatalogViews.playableIds(tracks, false), 0));
+        binding.artistShuffle.setOnClickListener(ignored -> activity.playTrackIds(CatalogViews.playableIds(tracks, true), 0));
+
+        header(binding.artistPopularHeader, R.string.artist_popular, !tracks.isEmpty());
+        binding.artistTracksContainer.removeAllViews();
         for (Track track : tracks) {
-            String subtitle = track.artistName == null ? "" : track.artistName;
-            if (!track.playable) {
-                subtitle += " · Unplayable";
-            } else {
-                subtitle += " · " + formatDuration(track.durationSeconds);
-            }
-
-            addRow(binding.artistTracksContainer, track.title, subtitle);
+            CatalogViews.songRow(binding.artistTracksContainer, track.title,
+                    track.playable ? CatalogViews.trackSubtitle(
+                            track.artistName == null ? data.artist.name : track.artistName, track.durationSeconds)
+                            : getString(R.string.unplayable),
+                    track.coverUrl, track.playable ? R.drawable.ic_play : 0,
+                    track.playable ? () -> activity.playCatalogTracks(tracks, track) : null);
         }
-    }
 
-    private void addAlbums(List<Album> albums) {
-        if (albums == null) return;
-
+        List<Album> albums = data.albums == null ? Collections.emptyList() : data.albums;
+        header(binding.artistReleasesHeader, R.string.artist_releases, !albums.isEmpty());
+        binding.artistAlbumsContainer.removeAllViews();
         for (Album album : albums) {
-            String subtitle = album.releaseDate == null ? "" : album.releaseDate;
-            addRow(binding.artistAlbumsContainer, album.title, subtitle);
+            String year = album.releaseDate == null || album.releaseDate.length() < 4
+                    ? "" : album.releaseDate.substring(0, 4) + " · ";
+            ItemAlbumTileBinding tile = CatalogViews.albumTile(binding.artistAlbumsContainer, album.title,
+                    year + getString(R.string.label_album), album.coverUrl,
+                    () -> CatalogViews.open(binding.getRoot(), R.id.albumDetailFragment, "albumId", album.id));
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) tile.getRoot().getLayoutParams();
+            params.setMarginEnd(CatalogViews.dp(binding.getRoot(), 16));
         }
     }
 
-    private void addRow(LinearLayout container, String title, String subtitle) {
-        TextView row = new TextView(requireContext());
-        row.setText((title == null ? "Untitled" : title) + "\n" + subtitle);
-        row.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary));
-        row.setTextSize(14);
-        row.setPadding(dp(14), dp(12), dp(14), dp(12));
-
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(ContextCompat.getColor(requireContext(), R.color.surface_primary));
-        background.setCornerRadius(dp(12));
-        row.setBackground(background);
-
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        );
-        params.topMargin = dp(8);
-        container.addView(row, params);
+    private static void header(ViewSectionHeaderBinding header, int title, boolean visible) {
+        header.getRoot().setVisibility(visible ? View.VISIBLE : View.GONE);
+        header.sectionTitle.setText(title);
+        header.sectionSeeAll.setVisibility(View.GONE);
     }
 
-    private void showMessage(String message) {
-        if (binding == null) return;
-        binding.artistDetailMessage.setText(message);
-        binding.artistDetailMessage.setVisibility(View.VISIBLE);
-    }
-
-    private String formatDuration(int seconds) {
-        return String.format(Locale.getDefault(), "%d:%02d", seconds / 60, seconds % 60);
-    }
-
-    private int dp(int value) {
-        return Math.round(
-                value * requireContext().getResources().getDisplayMetrics().density
-        );
+    private void showError() {
+        binding.artistState.getRoot().setVisibility(View.VISIBLE);
+        binding.artistState.stateIcon.setImageResource(R.drawable.ic_wifi_off);
+        binding.artistState.stateTitle.setText(R.string.detail_error_title);
+        binding.artistState.stateMessage.setText(R.string.detail_error_message);
+        binding.artistState.stateAction.setVisibility(View.VISIBLE);
     }
 
     @Override

@@ -3,8 +3,8 @@ plugins {
 }
 
 val debugApiUrl = providers.gradleProperty("musicApiUrl").orElse("http://10.0.2.2:8080/").get()
-require(debugApiUrl.matches(Regex("https?://[a-zA-Z0-9.:-]+/"))) {
-    "musicApiUrl must be an HTTP(S) origin ending in /"
+require(debugApiUrl.matches(Regex("https?://[a-zA-Z0-9.:/-]+/"))) {
+    "musicApiUrl must be an HTTP(S) URL ending in /"
 }
 
 android {

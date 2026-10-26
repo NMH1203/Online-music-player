@@ -10,6 +10,10 @@ public final class TrackPlayback {
     private long fileSizeBytes;
     private String streamUrl;
     private String attributionText;
+    private String artistId;
+    private String albumId;
+    private String albumTitle;
+    private String coverUrl;
 
     public String getTrackId() {
         return trackId;
@@ -41,5 +45,22 @@ public final class TrackPlayback {
 
     public String getAttributionText() {
         return attributionText;
+    }
+
+    public String getArtistId() {
+        return artistId;
+    }
+
+    public String getAlbumId() {
+        return albumId;
+    }
+
+    public String getAlbumTitle() {
+        return albumTitle;
+    }
+
+    /** Server-relative image path such as "/albums/{id}/cover", or null when there is no artwork. */
+    public String getCoverUrl() {
+        return coverUrl;
     }
 }

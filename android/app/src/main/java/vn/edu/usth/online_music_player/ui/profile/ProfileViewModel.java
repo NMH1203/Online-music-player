@@ -17,10 +17,13 @@ import vn.edu.usth.online_music_player.data.session.*;
 public class ProfileViewModel extends AndroidViewModel {
     public static class State {
         public boolean busy, signedIn;
+        /** The last action threw; {@link #message} explains why. */
+        public boolean failed;
         public String message="";
         public Profile profile;
         public Entitlement entitlement;
-        public List<History> history=Collections.emptyList();
+        /** From GET /me/stats; null when the server does not offer it yet. */
+        public Stats stats;
     }
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private final MutableLiveData<State> state=new MutableLiveData<>(new State());
@@ -36,36 +39,52 @@ public class ProfileViewModel extends AndroidViewModel {
     private interface Work { String run() throws Exception; }
     private void submit(Work work) {
         if(busy) return; busy=true;
-        State loading=copy(current); loading.busy=true; loading.message=""; state.setValue(loading);
+        State loading=copy(current); loading.busy=true; loading.message=""; loading.failed=false; state.setValue(loading);
         worker.execute(() -> {
             String message="";
+            boolean failed=false;
             try { message=work.run(); }
-            catch(Exception e) { message=e instanceof IOException ? e.getMessage() : "Có lỗi xảy ra. Vui lòng thử lại."; }
+            catch(Exception e) { failed=true; message=errorMessage(e, text(vn.edu.usth.online_music_player.R.string.generic_error)); }
             try { load(); }
-            catch(Exception e) { if(message.isEmpty()) message=e instanceof IOException ? e.getMessage() : "Không tải được hồ sơ."; }
+            catch(Exception e) { if(message.isEmpty()) { failed=true; message=errorMessage(e, text(vn.edu.usth.online_music_player.R.string.profile_load_failed)); } }
             if(AccessTokenStore.getAccessToken()==null) current=new State();
-            current.busy=false; current.message=message; busy=false; state.postValue(copy(current));
+            current.busy=false; current.message=message; current.failed=failed; busy=false; state.postValue(copy(current));
         });
+    }
+    private String errorMessage(Exception e, String fallback) {
+        if(e instanceof SessionManager.AuthFailure) {
+            return getApplication().getString(((SessionManager.AuthFailure) e).kind == SessionManager.AuthFailure.Kind.EMAIL_TAKEN
+                ? vn.edu.usth.online_music_player.R.string.auth_error_email_taken
+                : vn.edu.usth.online_music_player.R.string.auth_error_invalid_credentials);
+        }
+        // Connection-level failures from OkHttp carry developer text ("Failed to connect to /…").
+        if(e instanceof java.net.ConnectException || e instanceof java.net.SocketTimeoutException
+                || e instanceof java.net.UnknownHostException) {
+            return getApplication().getString(vn.edu.usth.online_music_player.R.string.auth_error_network);
+        }
+        return e instanceof IOException ? e.getMessage() : fallback;
     }
     private void load() throws IOException {
         if(!SessionManager.get().restore()) { current=new State(); return; }
         Profile profile=require(api.profile().execute());
         Entitlement entitlement=require(api.entitlement().execute());
-        List<History> history=current.profile!=null && current.profile.id.equals(profile.id)
-            && current.entitlement!=null && current.entitlement.planCode.equals(entitlement.planCode)
-            ? current.history : Collections.emptyList();
-        current=new State(); current.history=history; current.signedIn=true; current.profile=profile; current.entitlement=entitlement;
+        Stats stats=null;
+        try {
+            Response<Stats> response=api.stats().execute();
+            if(response.isSuccessful()) stats=response.body();
+        } catch(IOException ignored) { /* Stats are optional decoration on Profile. */ }
+        current=new State(); current.stats=stats; current.signedIn=true; current.profile=profile; current.entitlement=entitlement;
         EntitlementStore.update(entitlement);
     }
     public void refresh() { submit(() -> ""); }
     public void login(String email,String password,String name,boolean register) {
-        submit(() -> { SessionManager.get().login(new Login(email.trim(),password,name.trim()),register); return "Đăng nhập thành công."; });
+        submit(() -> { SessionManager.get().login(new Login(email.trim(),password,name.trim()),register); return ""; });
     }
     public void saveName(String name,String bio) {
-        submit(() -> { require(api.edit(new Edit(name.trim(),bio)).execute()); return "Đã lưu hồ sơ."; });
+        submit(() -> { require(api.edit(new Edit(name.trim(),bio)).execute()); return text(vn.edu.usth.online_music_player.R.string.profile_saved); });
     }
     public void logout() {
-        submit(() -> { SessionManager.get().logout(); appAdShownFor=null; return "Đã đăng xuất."; });
+        submit(() -> { SessionManager.get().logout(); appAdShownFor=null; return text(vn.edu.usth.online_music_player.R.string.profile_signed_out); });
     }
     public void upgrade(String outcome) {
         if(current.profile==null) return;
@@ -73,34 +92,30 @@ public class ProfileViewModel extends AndroidViewModel {
         submit(() -> {
             String savedOutcome=payments.getString(user+"_outcome",null);
             if(savedOutcome!=null && !savedOutcome.equals(outcome))
-                throw new IOException("Có giao dịch chưa nhận kết quả. Hãy thử lại đúng lựa chọn trước đó.");
+                throw new IOException(text(vn.edu.usth.online_music_player.R.string.paywall_pending_other));
             String key=payments.getString(user+"_key",null);
             if(key==null) {
                 key=UUID.randomUUID().toString();
                 if(!payments.edit().putString(user+"_key",key).putString(user+"_outcome",outcome).commit())
-                    throw new IOException("Không thể lưu mã giao dịch. Vui lòng thử lại.");
+                    throw new IOException(text(vn.edu.usth.online_music_player.R.string.paywall_key_failed));
             }
             Payment result=require(api.pay(new PaymentRequest(key,outcome)).execute());
             payments.edit().remove(user+"_key").remove(user+"_outcome").commit();
             EntitlementStore.update(result.entitlement);
-            return "success".equals(result.status) ? "Premium đã được kích hoạt. Không có khoản tiền nào bị trừ." : "Thanh toán mô phỏng thất bại. Gói sử dụng không thay đổi.";
+            return "success".equals(result.status) ? text(vn.edu.usth.online_music_player.R.string.paywall_success) : text(vn.edu.usth.online_music_player.R.string.paywall_failed);
         });
     }
     public void reset() {
-        submit(() -> { EntitlementStore.update(require(api.reset().execute())); return "Đã chuyển về Free. Playlist hiện có được giữ nguyên."; });
+        submit(() -> { EntitlementStore.update(require(api.reset().execute())); return text(vn.edu.usth.online_music_player.R.string.manage_plan_done); });
     }
-    public void loadHistory() {
-        if(busy) return;
-        submit(() -> { List<History> entries=require(api.history().execute()); load(); current.history=entries;
-            return entries.isEmpty() ? "Chưa có lịch sử trong phạm vi gói hiện tại." : "Đã tải lịch sử nghe."; });
-    }
+    private String text(int resource) { return getApplication().getString(resource); }
     private <T> T require(Response<T> response) throws IOException {
         if(!response.isSuccessful() || response.body()==null) throw SessionManager.apiError(response);
         return response.body();
     }
     private static State copy(State old) {
         State s=new State(); s.busy=old.busy; s.signedIn=old.signedIn; s.profile=old.profile;
-        s.entitlement=old.entitlement; s.message=old.message; s.history=old.history; return s;
+        s.entitlement=old.entitlement; s.message=old.message; s.failed=old.failed; s.stats=old.stats; return s;
     }
     @Override protected void onCleared() { worker.shutdownNow(); }
 }

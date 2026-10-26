@@ -15,6 +15,10 @@ public final class FavoriteTrack {
         return title;
     }
 
+    public int getDurationSeconds() {
+        return durationSeconds;
+    }
+
     public String getArtistName() {
         return artistName;
     }
