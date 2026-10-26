@@ -15,24 +15,30 @@ import okhttp3.Request;
 import vn.edu.usth.online_music_player.data.session.AccessTokenStore;
 
 /** Owns the single app player so audio and its queue survive Activity and screen changes. */
+@androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
 public final class PlaybackService extends MediaSessionService {
     @Nullable private ExoPlayer player;
     @Nullable private MediaSession mediaSession;
+    @Nullable private BoundaryAds boundaryAds;
 
     @Override
     public void onCreate() {
         super.onCreate();
         OkHttpClient httpClient = new OkHttpClient.Builder()
                 .addInterceptor(chain -> {
-                    Request.Builder request = chain.request().newBuilder();
+                    Request.Builder request = chain.request().newBuilder()
+                            .tag(vn.edu.usth.online_music_player.data.session.SessionManager.Stamp.class,
+                                    vn.edu.usth.online_music_player.data.session.SessionManager.get().stamp());
                     String token = AccessTokenStore.getAccessToken();
                     if (token != null) {
                         request.header("Authorization", "Bearer " + token);
                     }
                     return chain.proceed(request.build());
                 })
+                .authenticator((route, response) -> vn.edu.usth.online_music_player.data.session.SessionManager.get().authenticate(response))
                 .build();
-        DataSource.Factory dataSourceFactory = new OkHttpDataSource.Factory(httpClient);
+        DataSource.Factory dataSourceFactory = new androidx.media3.datasource.DefaultDataSource.Factory(
+                this, new OkHttpDataSource.Factory(httpClient));
         player = new ExoPlayer.Builder(this)
                 .setMediaSourceFactory(new DefaultMediaSourceFactory(dataSourceFactory))
                 .build();
@@ -43,7 +49,8 @@ public final class PlaybackService extends MediaSessionService {
                         .build(),
                 true);
         player.setHandleAudioBecomingNoisy(true);
-        mediaSession = new MediaSession.Builder(this, player).build();
+        boundaryAds = new BoundaryAds(this, player);
+        mediaSession = new MediaSession.Builder(this, boundaryAds.sessionPlayer()).build();
     }
 
     @Nullable
@@ -54,6 +61,7 @@ public final class PlaybackService extends MediaSessionService {
 
     @Override
     public void onDestroy() {
+        if (boundaryAds != null) { boundaryAds.close(); boundaryAds = null; }
         if (mediaSession != null) {
             Player sessionPlayer = mediaSession.getPlayer();
             mediaSession.release();

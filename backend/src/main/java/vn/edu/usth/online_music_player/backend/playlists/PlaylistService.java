@@ -98,9 +98,12 @@ public class PlaylistService {
     private Integer findMaxPlaylists(UUID userId) {
         List<PlanLimit> plans = jdbcTemplate.query(
                 """
-                SELECT p.max_playlists
+                SELECT CASE WHEN (s.expires_at IS NOT NULL AND s.expires_at <= now())
+                            OR s.starts_at > now() OR NOT p.active
+                       THEN free.max_playlists ELSE p.max_playlists END AS max_playlists
                 FROM subscriptions s
                 JOIN plans p ON p.id = s.plan_id
+                JOIN plans free ON free.code = 'FREE'
                 WHERE s.user_id = ? AND s.status = 'active'
                 """,
                 (resultSet, rowNumber) ->

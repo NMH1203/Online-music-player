@@ -1,18 +1,18 @@
 # Online Music Player
 
-Repository này chứa ứng dụng Android, backend Spring Boot, cấu hình PostgreSQL/Flyway và công cụ chuẩn bị nhạc demo trên MinIO. Library đọc favorites và playlist từ API; playlist hỗ trợ tạo, xem, sửa/xóa và thêm/xóa bài. Mã T08/T16 đã bổ sung backend stream HTTP Range và player Media3 chạy nền; phát nhạc xuyên suốt vẫn cần nối xác thực T04, khởi động backend/MinIO và kiểm tra trên thiết bị.
+Repository này chứa ứng dụng Android, backend Spring Boot, PostgreSQL/Flyway và nhạc demo trên MinIO. Phần Tiệp bổ sung đăng nhập/refresh/logout, Profile, Premium, thanh toán mô phỏng, quyền lợi và quảng cáo. Xem [hướng dẫn phần Tiệp và demo](documents/tiep-premium-ads.md).
 
 ## Hiện trạng
 
 | Thành phần | Đã có trong repository |
 |---|---|
-| Android | Một Activity, thanh điều hướng và bốn màn hình Home, Search, Library, Profile. Library hiển thị favorites/playlist từ API, gồm trạng thái rỗng, đăng nhập và lỗi mạng. Home, Search và Profile vẫn là placeholder. |
+| Android | Profile có đăng ký/đăng nhập, quyền lợi, paywall, chỉnh sửa hồ sơ, lịch sử và reset demo. Library hiển thị favorites/playlist từ API. |
 | Dữ liệu | Docker Compose chạy PostgreSQL 16.13 và Flyway 11.20.2; migration V1–V8, SQL kiểm tra và fixture catalog. |
 | Lưu trữ nhạc | Compose MinIO AIStor riêng, script thiết lập và script tải/seed 50 MP3 demo có thông tin giấy phép. Cần license AIStor hợp lệ để chạy. |
-| Backend | `backend/` có API yêu thích, playlist và T08 stream bài đã publish qua MinIO với byte range; T04 cần kết nối principal xác thực vào API. |
-| Tích hợp | Library/Playlist/Playback gọi API bằng Retrofit. Access token chỉ giữ trong RAM; T04 cần nối luồng đăng nhập vào `AccessTokenStore`. T16 có MediaSessionService, queue và mini player. |
+| Backend | API yêu thích, playlist, stream HTTP Range, auth/session, profile, entitlement, history và thanh toán mô phỏng; JWT filter cung cấp principal. |
+| Tích hợp | Access token trong RAM, refresh tự động; refresh token mã hóa bằng Android Keystore. MediaSessionService quản lý queue, mini player và audio ad placeholder. |
 
-Debug Android trỏ tới backend chạy trên máy host qua `10.0.2.2:8080`; bản release vẫn dùng URL mẫu. T16 đã khai báo media playback foreground service và điều khiển play/pause/seek/next/previous. Chưa có đăng nhập T04 trong nhánh này, vì vậy backend hiện trả 401 cho playback nếu chưa có principal; MinIO/backend và thiết bị thật cũng cần được chạy để kiểm thử luồng nghe thực tế. Xem [thiết kế kiến trúc/API](documents/mobile-system-architecture-and-flows.md).
+Debug Android mặc định dùng `10.0.2.2:8080`, có thể đổi bằng `-PmusicApiUrl=http://127.0.0.1:8080/` khi dùng USB reverse. Backend cần `AUTH_JWT_SECRET` ít nhất 32 byte và cấu hình database/MinIO. Chạy `scripts/run-tiep-backend.ps1 -Demo` để bật nâng cấp/reset giả lập. Luồng nghe thực tế cần MinIO/backend và thiết bị hoạt động.
 
 ## Cấu trúc chính
 

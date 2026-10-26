@@ -13,6 +13,11 @@ server:
   address: ${SERVER_ADDRESS:127.0.0.1}
   port: ${SERVER_PORT:8080}
 
+auth:
+  jwt-secret: ${AUTH_JWT_SECRET:}
+demo:
+  enabled: ${DEMO_ENABLED:false}
+
 storage:
   endpoint: ${MINIO_ENDPOINT:http://127.0.0.1:9000}
   region: ${MINIO_REGION:us-east-1}

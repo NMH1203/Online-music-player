@@ -24,9 +24,14 @@ in `compose.yaml`; use a private password in a shared or non-local environment.
 ## Current-user integration
 
 Every `/me/...` endpoint resolves the user UUID from the authenticated Java `Principal`.
-The API never accepts a user id in a request body or path. The authentication task (T04)
-must set the principal name/JWT subject to the UUID in `users.id`. Until that authentication
-filter is integrated, requests without an authenticated principal receive `401`.
+The API never accepts a user id in a request body or path. The bearer-token filter verifies
+HS256 signatures, issuer, audience, expiry and the active session family, then supplies
+the UUID principal. Unauthenticated requests receive `401`.
+Configure `AUTH_JWT_SECRET` with at least 32 bytes before startup.
+
+The Tiệp implementation adds auth/session, profile, entitlements, plan-aware history,
+ads policy and mock payment/reset endpoints. See [API contract and demo guide](../documents/tiep-premium-ads.md).
+`DEMO_ENABLED` defaults to false; enable it for mock upgrade/reset workflows.
 
 ## Endpoints in this foundation
 
@@ -62,7 +67,7 @@ the authenticated playback endpoint and audio bytes are proxied from MinIO.
 Errors use the shared `code`, `message`, `details`, and `request_id` response envelope.
 
 Playback requires an authenticated principal with a UUID subject, as do the `/me/...`
-routes. The auth task must install that principal before the player can stream. The
+routes. The bearer-token filter installs that principal before the player streams. The
 playback response intentionally omits the bucket and object key. The stream returns
 `200 OK` for a full read, `206 Partial Content` for a valid single `Range`, and `416`
 with `Content-Range: bytes */<size>` for an unsatisfiable/malformed range. Storage

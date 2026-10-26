@@ -20,10 +20,16 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.security:spring-security-crypto")
+    implementation("org.springframework.security:spring-security-oauth2-jose")
     implementation("io.minio:minio:9.0.3")
     runtimeOnly("org.postgresql:postgresql")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.springframework:spring-test")
+    testImplementation("io.zonky.test:embedded-postgres:2.2.2")
+    testImplementation(enforcedPlatform("io.zonky.test.postgres:embedded-postgres-binaries-bom:16.13.0"))
+    testRuntimeOnly("org.postgresql:postgresql")
 }
 
 tasks.withType<JavaCompile>().configureEach {

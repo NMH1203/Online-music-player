@@ -1,13 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#121212">
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="Profile Screen"
-        android:textColor="@color/white"
-        android:textSize="20sp" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/background_primary" android:fillViewport="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Hồ sơ" android:textSize="30sp" android:textColor="@color/text_primary" android:lineSpacingExtra="5dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Âm nhạc của bạn. Trải nghiệm của bạn." android:textSize="15sp" android:textColor="@color/text_secondary" android:lineSpacingExtra="5dp" />
+        <ProgressBar android:id="@+id/profile_progress" android:layout_width="32dp" android:layout_height="32dp" android:layout_gravity="center" android:layout_margin="12dp" />
+        <TextView android:id="@+id/profile_message" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="" android:textSize="15sp" android:textColor="@color/accent_primary" android:lineSpacingExtra="5dp" />
+        <LinearLayout android:id="@+id/login_panel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="16dp" android:background="@drawable/bg_profile_card" android:padding="20dp">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Chào mừng bạn" android:textSize="22sp" android:textColor="@color/text_primary" android:lineSpacingExtra="5dp" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Đăng nhập để lưu thư viện và quản lý gói nhạc." android:textSize="14sp" android:textColor="@color/text_secondary" android:lineSpacingExtra="5dp" />
+            <EditText android:id="@+id/login_email" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:hint="Email" android:inputType="textEmailAddress" android:maxLength="320" />
+            <EditText android:id="@+id/login_password" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:hint="Mật khẩu" android:inputType="textPassword" android:maxLength="72" />
+            <EditText android:id="@+id/login_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:hint="Tên hiển thị (khi đăng ký)" android:inputType="textPersonName" android:maxLength="100" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/login_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Đăng nhập" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/register_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Tạo tài khoản" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/account_panel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="16dp">
+            <TextView android:id="@+id/profile_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="" android:textSize="24sp" android:textColor="@color/text_primary" android:lineSpacingExtra="5dp" />
+            <TextView android:id="@+id/profile_email" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="" android:textSize="14sp" android:textColor="@color/text_secondary" android:lineSpacingExtra="5dp" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/edit_profile_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Chỉnh sửa hồ sơ" />
+            <LinearLayout android:id="@+id/plan_card" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="16dp" android:background="@drawable/bg_profile_card" android:padding="20dp">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="GÓI CỦA BẠN" android:textSize="12sp" android:textColor="@color/text_secondary" android:lineSpacingExtra="5dp" />
+                <TextView android:id="@+id/plan_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="" android:textSize="32sp" android:textColor="@color/accent_primary" android:lineSpacingExtra="5dp" />
+                <TextView android:id="@+id/plan_dates" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="" android:textSize="14sp" android:textColor="@color/text_secondary" android:lineSpacingExtra="5dp" />
+                <TextView android:id="@+id/plan_benefits" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="" android:textSize="16sp" android:textColor="@color/text_primary" android:lineSpacingExtra="5dp" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/upgrade_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Khám phá Premium" />
+                <TextView android:id="@+id/demo_note" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Thanh toán mô phỏng • Không thu tiền thật" android:textSize="12sp" android:textColor="@color/text_secondary" android:lineSpacingExtra="5dp" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/reset_plan_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Reset demo về Free" />
+            </LinearLayout>
+            <com.google.android.material.button.MaterialButton android:id="@+id/history_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Xem lịch sử nghe" />
+            <TextView android:id="@+id/history_entries" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="" android:textSize="14sp" android:textColor="@color/text_secondary" android:lineSpacingExtra="5dp" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/logout_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Đăng xuất" />
+        </LinearLayout>
+        <com.google.android.material.button.MaterialButton android:id="@+id/profile_retry" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Làm mới / Thử lại" />
+    </LinearLayout>
+</ScrollView>
