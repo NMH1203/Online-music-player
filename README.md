@@ -75,6 +75,8 @@ Check the backend with `curl http://127.0.0.1:8080/home`. Details and options ar
    - Emulator: the default `http://10.0.2.2:8080/` works.
    - USB phone: run `adb reverse tcp:8080 tcp:8080` and build with `-PmusicApiUrl=http://127.0.0.1:8080/`
      (or set `musicApiUrl=http://127.0.0.1:8080/` in `android/gradle.properties`).
+     The tunnel is lost when the cable is re-plugged or adb restarts; keep `.\scripts\Watch-AdbReverse.ps1`
+     running in a terminal and it re-creates the tunnel automatically every time a phone connects.
    - Phone on the same Wi-Fi: use the PC's LAN address, e.g. `-PmusicApiUrl=http://192.168.1.20:8080/`
      (the backend must listen on that address – see backend/README.md).
 3. Run the **app** configuration, or from PowerShell:
