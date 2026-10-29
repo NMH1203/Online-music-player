@@ -21,9 +21,12 @@ public class ProfileController {
     public record Edit(@NotBlank @Size(max=100) String displayName, @Size(max=500) String bio) {}
     public record Stats(long validPlays, long minutesListened, long likedTracks, long likedAlbums, long playlists) {}
     @GetMapping("/me/profile") public Profile profile(Principal p) {
-        return db.queryForObject("""
+        var rows = db.query("""
             SELECT u.id, u.email, p.display_name, p.bio FROM users u JOIN user_profiles p ON p.user_id = u.id WHERE u.id = ?
             """, (r,n) -> new Profile(r.getObject("id", UUID.class), r.getString("email"), r.getString("display_name"), r.getString("bio")), users.require(p));
+        if (rows.isEmpty()) throw new vn.edu.usth.online_music_player.backend.common.ApiException(
+            org.springframework.http.HttpStatus.NOT_FOUND, "profile_not_found", "Không tìm thấy hồ sơ người dùng.");
+        return rows.get(0);
     }
     @PatchMapping("/me/profile") public Profile edit(Principal p, @Valid @RequestBody Edit edit) {
         db.update("UPDATE user_profiles SET display_name = ?, bio = ? WHERE user_id = ?",
@@ -49,7 +52,7 @@ public class ProfileController {
             id, id, id, id, id);
     }
     @GetMapping("/me/history") public List<Map<String,Object>> history(Principal p,
-            @RequestParam(name="page", defaultValue="0") @Min(0) int page) {
+            @RequestParam(name="page", defaultValue="0") int page) {
         UUID id = users.require(p);
         if (page < 0 || page > 100000) throw new vn.edu.usth.online_music_player.backend.common.ApiException(
             org.springframework.http.HttpStatus.BAD_REQUEST, "invalid_page", "Trang không hợp lệ.");

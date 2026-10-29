@@ -117,7 +117,7 @@ Free chèn ad trước bài tiếp theo; Premium đi thẳng tới bài tiếp t
 Không tự ngắt một bài đang phát khi đổi Premium về Free.
 Nâng cấp khi đang phát ad sẽ chuyển ngay sang bài kế tiếp.
 Quảng cáo dùng cùng ExoPlayer/MediaSession nên giữ audio focus và điều khiển phát nền.
-Khi không xác minh được gói do mạng lỗi, dừng ở ranh giới bài và cho thử lại bằng nút Tiếp.
+Khi kiểm tra gói thất bại hoặc quá 3 giây, tiếp tục chuyển bài: dùng Premium đã xác minh trong 15 phút gần nhất và chưa hết hạn; nếu không có thì áp dụng Free. Việc tải audio vẫn cần mạng.
 
 ## Demo hai vòng
 

@@ -36,7 +36,7 @@ public class LibraryService {
                 JOIN tracks t ON t.id = favorite.track_id
                 JOIN artists artist ON artist.id = t.primary_artist_id
                 LEFT JOIN albums album ON album.id = t.album_id
-                WHERE favorite.user_id = ?
+                WHERE favorite.user_id = ? AND t.status = 'published'
                 ORDER BY favorite.added_at DESC, t.id
                 """,
                 TRACK_ROW_MAPPER,
@@ -60,7 +60,7 @@ public class LibraryService {
 
     @Transactional
     public void addFavoriteTrack(UUID userId, UUID trackId) {
-        if (!exists("SELECT EXISTS (SELECT 1 FROM tracks WHERE id = ?)", trackId)) {
+        if (!exists("SELECT EXISTS (SELECT 1 FROM tracks WHERE id = ? AND status = 'published')", trackId)) {
             throw notFound("Không tìm thấy bài hát.");
         }
         jdbcTemplate.update(

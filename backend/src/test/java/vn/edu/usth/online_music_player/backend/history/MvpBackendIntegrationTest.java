@@ -68,6 +68,7 @@ public class MvpBackendIntegrationTest {
     private PlaybackService playbackService;
     private RecommendationService recommendationService;
     private MockMvc http;
+    private StubMinioClient storage;
 
     private UUID artist1;
     private UUID artist2;
@@ -133,7 +134,7 @@ public class MvpBackendIntegrationTest {
         storageProperties.setAccessKey("test");
         storageProperties.setSecretKey("test");
 
-        MinioClient stubMinio = new StubMinioClient();
+        MinioClient stubMinio = storage = new StubMinioClient();
 
         http = MockMvcBuilders.standaloneSetup(
                         new AuthController(auth),
@@ -385,7 +386,7 @@ public class MvpBackendIntegrationTest {
         UUID recJazz2 = insertPublishedTrack("Jazz Gem 2", artist1, albumWithCover, 160, 80.0, genreJazz);
         UUID recRock1 = insertPublishedTrack("Rock Anthem", artist2, albumWithoutCover, 170, 50.0, genreRock);
 
-        // Unauthenticated /home returns empty recentlyPlayed and forYou (and never 401 even with bad token)
+        // Anonymous Home stays public; an invalid supplied token must trigger refresh.
         var homeAnon = http.perform(get("/home")).andReturn().getResponse();
         assertEquals(200, homeAnon.getStatus());
         assertTrue(homeAnon.getContentAsString().contains("\"recentlyPlayed\":[]"));
@@ -393,8 +394,8 @@ public class MvpBackendIntegrationTest {
 
         var homeBadBearer = http.perform(get("/home").header("Authorization", "Bearer invalid-token"))
                 .andReturn().getResponse();
-        assertEquals(200, homeBadBearer.getStatus());
-        assertTrue(homeBadBearer.getContentAsString().contains("\"recentlyPlayed\":[]"));
+        assertEquals(401, homeBadBearer.getStatus());
+        assertTrue(homeBadBearer.getContentAsString().contains("invalid_session"));
 
         // Cold start recommendations (< 5 valid plays)
         var coldRecs = http.perform(get("/recommendations?limit=5&currentTrackId=" + shortTrack)
@@ -461,7 +462,115 @@ public class MvpBackendIntegrationTest {
         assertTrue(homeAuthJson.contains("\"forYou\":[{\""));
     }
 
+
+    @Test public void streamMapsStorageErrorsBeforeSuccessHeadersAndClosesStream() throws Exception {
+        var user = registerUser("stream-check");
+        String bearer = "Bearer " + user.accessToken();
+        storage.failure = "missing";
+        var missing = http.perform(get("/tracks/" + shortTrack + "/stream").header("Authorization", bearer)).andReturn().getResponse();
+        assertEquals(404, missing.getStatus());
+        assertTrue(missing.getContentAsString().contains("audio_not_found"));
+        storage.failure = "offline";
+        assertEquals(503, http.perform(get("/tracks/" + shortTrack + "/stream").header("Authorization", bearer)).andReturn().getResponse().getStatus());
+        storage.failure = null;
+        storage.size = 4;
+        var partial = http.perform(get("/tracks/" + shortTrack + "/stream").header("Authorization", bearer).header("Range", "bytes=0-3")).andReturn().getResponse();
+        assertEquals(206, partial.getStatus());
+        assertEquals("bytes 0-3/102400", partial.getHeader("Content-Range"));
+        assertEquals(4, partial.getContentAsByteArray().length);
+        assertTrue(storage.closed);
+        storage.size = 102400;
+        var full = http.perform(get("/tracks/" + shortTrack + "/stream").header("Authorization", bearer)).andReturn().getResponse();
+        assertEquals(200, full.getStatus());
+        assertEquals(102400, full.getContentAsByteArray().length);
+        assertEquals(416, http.perform(get("/tracks/" + shortTrack + "/stream").header("Authorization", bearer).header("Range", "bytes=200000-")).andReturn().getResponse().getStatus());
+    }
+
+    @Test public void searchTreatsWildcardCharactersLiterallyAndRejectsLongQueries() throws Exception {
+        db.update("UPDATE tracks SET title = ? WHERE id = ?", "100%_\\mix", shortTrack);
+        var catalog = new CatalogController(db);
+        assertEquals(1, ((List<?>) catalog.search("%").get("tracks")).size());
+        assertEquals(1, ((List<?>) catalog.search("_").get("tracks")).size());
+        assertEquals(1, ((List<?>) catalog.search("\\").get("tracks")).size());
+        assertEquals(0, ((List<?>) catalog.search("%_").get("albums")).size());
+        var trackCatalog = new vn.edu.usth.online_music_player.backend.catalog.TrackCatalogService(db);
+        assertEquals(1, trackCatalog.listPublishedTracks("%").size());
+        assertEquals(1, trackCatalog.listPublishedTracks("_").size());
+        assertEquals(1, trackCatalog.listPublishedTracks("\\").size());
+        assertEquals(400, http.perform(get("/search").param("q", "x".repeat(101))).andReturn().getResponse().getStatus());
+    }
+
+    @Test public void unpublishedTracksCannotBeLikedOrShownInFavorites() throws Exception {
+        var user = registerUser("like-check");
+        String bearer = "Bearer " + user.accessToken();
+        assertEquals(204, http.perform(put("/me/library/tracks/" + shortTrack).header("Authorization", bearer)).andReturn().getResponse().getStatus());
+        db.update("UPDATE tracks SET status = 'draft' WHERE id = ?", shortTrack);
+        assertEquals(404, http.perform(put("/me/library/tracks/" + shortTrack).header("Authorization", bearer)).andReturn().getResponse().getStatus());
+        assertTrue(context.getBean(LibraryService.class).listFavoriteTracks(user.userId()).isEmpty());
+    }
+
+    @Test public void webpAndLargeImageResponsesAreCorrect() throws Exception {
+        db.update("UPDATE albums SET cover_object_key = 'cover.webp' WHERE id = ?", albumWithCover);
+        var image = http.perform(get("/albums/" + albumWithCover + "/cover")).andReturn().getResponse();
+        assertEquals("image/webp", image.getContentType());
+        assertTrue(storage.closed);
+        storage.size = 5 * 1024 * 1024 + 100;
+        assertEquals(413, http.perform(get("/albums/" + albumWithCover + "/cover")).andReturn().getResponse().getStatus());
+        assertTrue(storage.closed);
+    }
+
+    @Test public void listeningRejectsFutureAndInflatedTimeAndDoesNotDoubleCountOverlaps() {
+        var user = registerUser("listen-check");
+        var now = java.time.Instant.now();
+        var first = new ListeningEventRequest(UUID.randomUUID(), longTrack, "album", null, now.minusSeconds(60), now, 30);
+        assertTrue(listeningEvents.recordEvent(user.userId(), first).countedAsPlay());
+        assertTrue(listeningEvents.recordEvent(user.userId(), first).countedAsPlay());
+        var duplicateInterval = new ListeningEventRequest(UUID.randomUUID(), longTrack, "album", null, now.minusSeconds(50), now, 30);
+        assertFalse(listeningEvents.recordEvent(user.userId(), duplicateInterval).countedAsPlay());
+        assertEquals(21.0, db.queryForObject("SELECT popularity_score FROM tracks WHERE id = ?", Double.class, longTrack), 0.001);
+        try {
+            listeningEvents.recordEvent(user.userId(), new ListeningEventRequest(UUID.randomUUID(), longTrack, "queue", null, now.plusSeconds(3600), now.plusSeconds(3660), 30));
+            org.junit.Assert.fail("Future listen accepted");
+        } catch (vn.edu.usth.online_music_player.backend.common.ApiException e) { assertEquals("future_listen", e.code()); }
+        try {
+            listeningEvents.recordEvent(user.userId(), new ListeningEventRequest(UUID.randomUUID(), longTrack, "queue", null, now.minusSeconds(1), now, 60));
+            org.junit.Assert.fail("Impossible duration accepted");
+        } catch (vn.edu.usth.online_music_player.backend.common.ApiException e) { assertEquals("invalid_listened_seconds", e.code()); }
+    }
+
+    @Test public void rateLimitStillAcceptsAnAlreadyAcknowledgedEvent() {
+        var user = registerUser("rate-check");
+        var now = java.time.Instant.now();
+        var first = new ListeningEventRequest(UUID.randomUUID(), longTrack, "queue", null, now.minusSeconds(60), now, 0);
+        listeningEvents.recordEvent(user.userId(), first);
+        db.update("""
+            INSERT INTO listening_history(client_event_id, user_id, track_id, source_context, started_at, ended_at, listened_seconds, counted_as_play)
+            SELECT gen_random_uuid(), ?, ?, 'queue', now() - interval '1 second', now(), 0, false FROM generate_series(1,119)
+            """, user.userId(), longTrack);
+        assertFalse(listeningEvents.recordEvent(user.userId(), first).countedAsPlay());
+        try {
+            listeningEvents.recordEvent(user.userId(), new ListeningEventRequest(UUID.randomUUID(), longTrack, "queue", null, now.minusSeconds(60), now, 0));
+            org.junit.Assert.fail("Rate limit missing");
+        } catch (vn.edu.usth.online_music_player.backend.common.ApiException e) { assertEquals(429, e.status().value()); }
+    }
+
+
+    @Test public void expiredHomeTokenRefreshesAndRestoresPersonalSections() throws Exception {
+        var user = registerUser("home-refresh");
+        var original = com.nimbusds.jwt.SignedJWT.parse(user.accessToken());
+        var claims = new com.nimbusds.jwt.JWTClaimsSet.Builder(original.getJWTClaimsSet())
+                .expirationTime(java.util.Date.from(java.time.Instant.now().minusSeconds(60))).build();
+        var expired = new com.nimbusds.jwt.SignedJWT(original.getHeader(), claims);
+        expired.sign(new com.nimbusds.jose.crypto.MACSigner("test-only-32-byte-secret-never-use-in-production"));
+        assertEquals(401, http.perform(get("/home").header("Authorization", "Bearer " + expired.serialize())).andReturn().getResponse().getStatus());
+        var refreshed = auth.refresh(user.refreshToken());
+        assertEquals(200, http.perform(get("/home").header("Authorization", "Bearer " + refreshed.accessToken())).andReturn().getResponse().getStatus());
+        assertEquals(200, http.perform(get("/home")).andReturn().getResponse().getStatus());
+    }
     private static final class StubMinioClient extends MinioClient {
+        String failure;
+        int size = 15;
+        boolean closed;
         StubMinioClient() {
             super(MinioClient.builder()
                     .endpoint("http://127.0.0.1:9000")
@@ -470,14 +579,19 @@ public class MvpBackendIntegrationTest {
         }
 
         @Override
-        public GetObjectResponse getObject(GetObjectArgs args) {
-            byte[] fakeImage = "fake-image-bytes".getBytes(StandardCharsets.UTF_8);
+        public GetObjectResponse getObject(GetObjectArgs args) throws io.minio.errors.ErrorResponseException {
+            if ("missing".equals(failure)) throw new io.minio.errors.ErrorResponseException(
+                    new io.minio.messages.ErrorResponse("NoSuchKey", "Missing", args.bucket(), args.object(), "resource", "request", "host"), null, null);
+            if ("offline".equals(failure)) throw new java.io.UncheckedIOException(new java.io.IOException("Storage offline"));
+            byte[] fakeImage = new byte[size];
             return new GetObjectResponse(
                     Headers.of("Content-Length", String.valueOf(fakeImage.length)),
                     args.bucket(),
                     args.region(),
                     args.object(),
-                    new ByteArrayInputStream(fakeImage));
+                    new ByteArrayInputStream(fakeImage) {
+                        @Override public void close() throws java.io.IOException { closed = true; super.close(); }
+                    });
         }
     }
 }

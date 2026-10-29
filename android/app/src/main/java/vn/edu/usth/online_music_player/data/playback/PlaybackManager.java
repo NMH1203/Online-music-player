@@ -22,6 +22,8 @@ public final class PlaybackManager {
     /** MediaMetadata extras keys used by Now Playing to open the artist/album pages. */
     public static final String EXTRA_ARTIST_ID = "artistId";
     public static final String EXTRA_ALBUM_ID = "albumId";
+    public static final String EXTRA_SOURCE_CONTEXT = "sourceContext";
+    public static final String EXTRA_SOURCE_PLAYLIST = "sourcePlaylistId";
 
     public interface Listener {
         void onPlaybackChanged();
@@ -103,12 +105,15 @@ public final class PlaybackManager {
     }
 
     public void playQueue(List<TrackPlayback> tracks, int startIndex) {
+        playQueue(tracks, startIndex, "queue", null);
+    }
+    public void playQueue(List<TrackPlayback> tracks, int startIndex, String source, String playlistId) {
         if (tracks == null || tracks.isEmpty() || startIndex < 0 || startIndex >= tracks.size()) {
             return;
         }
         List<MediaItem> items = new ArrayList<>(tracks.size());
         for (TrackPlayback track : tracks) {
-            items.add(toMediaItem(track));
+            items.add(toMediaItem(track, source, playlistId));
         }
         runWhenConnected(() -> {
             controller.setMediaItems(items, startIndex, 0L);
@@ -222,8 +227,11 @@ public final class PlaybackManager {
         return BuildConfig.BASE_URL + (path.startsWith("/") ? path.substring(1) : path);
     }
 
-    private MediaItem toMediaItem(TrackPlayback track) {
+    private MediaItem toMediaItem(TrackPlayback track) { return toMediaItem(track, "queue", null); }
+    private MediaItem toMediaItem(TrackPlayback track, String source, String playlistId) {
         Bundle extras = new Bundle();
+        extras.putString(EXTRA_SOURCE_CONTEXT, source);
+        extras.putString(EXTRA_SOURCE_PLAYLIST, playlistId);
         extras.putString(EXTRA_ARTIST_ID, track.getArtistId());
         extras.putString(EXTRA_ALBUM_ID, track.getAlbumId());
         String cover = absoluteUrl(track.getCoverUrl());

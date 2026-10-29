@@ -22,10 +22,6 @@ public class BearerTokenFilter extends OncePerRequestFilter {
             identity = tokens.verify(header.substring(7));
             if (!auth.validIdentity(identity)) throw new IllegalArgumentException();
         } catch (IllegalArgumentException e) {
-            if ("/home".equals(request.getRequestURI())) {
-                chain.doFilter(request, response);
-                return;
-            }
             response.setStatus(401); response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"code\":\"invalid_session\",\"message\":\"Phiên đã hết hạn. Vui lòng đăng nhập lại.\",\"details\":{},\"request_id\":\"" + java.util.UUID.randomUUID() + "\"}");
             return;

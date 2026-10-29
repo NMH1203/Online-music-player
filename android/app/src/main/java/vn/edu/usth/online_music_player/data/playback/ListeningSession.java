@@ -9,6 +9,8 @@ import java.util.UUID;
 final class ListeningSession {
     final String clientEventId = UUID.randomUUID().toString();
     final String trackId;
+    String owner, sourcePlaylistId;
+    String sourceContext = "queue";
     final long startedAtEpochMs;
     private long playedMs;
     private long resumedAtMs = -1;

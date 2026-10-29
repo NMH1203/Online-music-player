@@ -7,6 +7,11 @@ require(debugApiUrl.matches(Regex("https?://[a-zA-Z0-9.:/-]+/"))) {
     "musicApiUrl must be an HTTP(S) URL ending in /"
 }
 
+val releaseApiUrl = providers.gradleProperty("musicReleaseApiUrl").orElse("").get()
+require(releaseApiUrl.isEmpty() || releaseApiUrl.matches(Regex("https://[a-zA-Z0-9.:-]+(/[a-zA-Z0-9._/-]*)?/"))) {
+    "musicReleaseApiUrl must be an HTTPS URL ending in /"
+}
+
 android {
     namespace = "vn.edu.usth.online_music_player"
     compileSdk = 35
@@ -31,7 +36,7 @@ android {
             buildConfigField("String", "BASE_URL", "\"$debugApiUrl\"")
         }
         release {
-            buildConfigField("String", "BASE_URL", "\"https://api.musicplayer.com/\"")
+            buildConfigField("String", "BASE_URL", "\"$releaseApiUrl\"")
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
@@ -76,4 +81,14 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+}
+
+// Prevent accidental publication with an empty or example API endpoint.
+tasks.matching { it.name == "preReleaseBuild" }.configureEach {
+    val configuredUrl = releaseApiUrl
+    doFirst {
+        require(configuredUrl.matches(Regex("https://[a-zA-Z0-9.:-]+(/[a-zA-Z0-9._/-]*)?/"))) {
+            "Release requires -PmusicReleaseApiUrl=https://YOUR_BACKEND/"
+        }
+    }
 }

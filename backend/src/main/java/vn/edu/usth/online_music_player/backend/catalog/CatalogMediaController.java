@@ -68,16 +68,24 @@ public class CatalogMediaController {
                 .object(objectKey)
                 .build();
         try (InputStream input = minioClient.getObject(args)) {
-            byte[] bytes = input.readAllBytes();
+            byte[] bytes = input.readNBytes(5 * 1024 * 1024 + 1);
+            if (bytes.length > 5 * 1024 * 1024) throw new ApiException(
+                    HttpStatus.PAYLOAD_TOO_LARGE, "image_too_large", "Ảnh vượt quá giới hạn 5 MiB.");
             return ResponseEntity.ok()
                     .contentType(detectImageMediaType(objectKey))
                     .header(HttpHeaders.CACHE_CONTROL, "max-age=86400")
                     .body(bytes);
+        } catch (ApiException exception) {
+            throw exception;
+        } catch (io.minio.errors.ErrorResponseException exception) {
+            if (!"NoSuchKey".equals(exception.errorResponse().code())) throw new ApiException(
+                    HttpStatus.SERVICE_UNAVAILABLE, "storage_unavailable", "Kho ảnh tạm thời không khả dụng.");
+            throw new ApiException(HttpStatus.NOT_FOUND, "image_not_found", "Không tìm thấy tệp ảnh.");
         } catch (Exception exception) {
             throw new ApiException(
-                    HttpStatus.NOT_FOUND,
-                    "image_not_found",
-                    "Không tìm thấy tệp ảnh trong kho lưu trữ.");
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "storage_unavailable",
+                    "Kho ảnh tạm thời không khả dụng.");
         }
     }
 
@@ -86,6 +94,9 @@ public class CatalogMediaController {
         if (lower.endsWith(".png")) {
             return MediaType.IMAGE_PNG;
         }
-        return MediaType.IMAGE_JPEG;
+        if (lower.endsWith(".webp")) return MediaType.parseMediaType("image/webp");
+        if (lower.endsWith(".gif")) return MediaType.IMAGE_GIF;
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return MediaType.IMAGE_JPEG;
+        return MediaType.APPLICATION_OCTET_STREAM;
     }
 }

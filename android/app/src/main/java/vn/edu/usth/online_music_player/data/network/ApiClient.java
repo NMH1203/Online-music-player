@@ -26,13 +26,16 @@ public final class ApiClient {
                             .readTimeout(15, TimeUnit.SECONDS)
                             .writeTimeout(15, TimeUnit.SECONDS)
                             .addInterceptor(chain -> {
-                                Request.Builder request = chain.request().newBuilder()
-                                        .tag(vn.edu.usth.online_music_player.data.session.SessionManager.Stamp.class,
-                                                vn.edu.usth.online_music_player.data.session.SessionManager.get().stamp())
-                                        .header("Accept", "application/json");
-                                String token = AccessTokenStore.getAccessToken();
-                                if (token != null) {
-                                    request.header("Authorization", "Bearer " + token);
+                                var manager = vn.edu.usth.online_music_player.data.session.SessionManager.get();
+                                Request.Builder request = chain.request().newBuilder().header("Accept", "application/json");
+                                synchronized (manager) {
+                                    var supplied = chain.request().tag(vn.edu.usth.online_music_player.data.session.SessionManager.Stamp.class);
+                                    var current = manager.stamp();
+                                    if (supplied != null && supplied.generation != current.generation)
+                                        throw new java.io.IOException("Account changed before request was sent");
+                                    request.tag(vn.edu.usth.online_music_player.data.session.SessionManager.Stamp.class, current);
+                                    String token = AccessTokenStore.getAccessToken();
+                                    if (token != null) request.header("Authorization", "Bearer " + token);
                                 }
                                 return chain.proceed(request.build());
                             })

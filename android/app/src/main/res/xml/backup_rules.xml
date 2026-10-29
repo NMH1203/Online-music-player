@@ -8,6 +8,7 @@
 <full-backup-content>
     <exclude domain="sharedpref" path="secure_session.xml"/>
     <exclude domain="sharedpref" path="pending_revocations.xml"/>
+        <exclude domain="sharedpref" path="listening_outbox.xml"/>
     <!--
    <include domain="sharedpref" path="."/>
    <exclude domain="sharedpref" path="device.xml"/>
