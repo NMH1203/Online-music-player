@@ -34,3 +34,6 @@ backups/
 # Local Python env and private audio not licensed for redistribution
 venv/
 song/
+
+# Local task hand-off between agents (kept on this PC only)
+.communication/
