@@ -161,7 +161,7 @@ public class PlaylistDetailFragment extends Fragment {
         if (playlist == null || playlist.getTracks().isEmpty()) return;
         List<String> ids = new ArrayList<>();
         for (PlaylistTrack track : playlist.getTracks()) ids.add(track.getId());
-        ((MainActivity) requireActivity()).playTrackIds(ids, startIndex);
+        ((MainActivity) requireActivity()).playTrackIds(ids, startIndex, "playlist", playlistId);
     }
 
     private void openTrackPicker() {

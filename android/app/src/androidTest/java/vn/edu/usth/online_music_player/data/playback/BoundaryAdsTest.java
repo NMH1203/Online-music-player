@@ -74,13 +74,19 @@ public class BoundaryAdsTest {
             assertFalse(ads.isAd());
         });
     }
-    @Test public void failedPolicyRequestPausesAndAllowsRetry() throws Exception {
+    @Test public void failedPolicyRequestUsesFreeFallbackAndContinues() throws Exception {
+        EntitlementStore.clear();
         server.enqueue(new MockResponse().setResponseCode(503));
         onMain(()->ads.next());
-        assertNotNull(server.takeRequest(5,TimeUnit.SECONDS));
-        assertNull(transitions.poll(2,TimeUnit.SECONDS));
-        onMain(()->assertFalse(player.getPlayWhenReady()));
-        server.enqueue(new MockResponse().setBody("{\"adFree\":true}").addHeader("Content-Type","application/json"));
+        assertEquals(BoundaryAds.AD_ID,transitions.poll(10,TimeUnit.SECONDS));
+        onMain(()->ads.next());
+        assertEquals("second",transitions.poll(5,TimeUnit.SECONDS));
+    }
+    @Test public void offlineWithRecentPremiumSkipsAd() throws Exception {
+        AccountModels.Entitlement premium=new AccountModels.Entitlement();
+        premium.adFree=true; premium.expiresAt=java.time.Instant.now().plusSeconds(3600).toString();
+        EntitlementStore.update(premium);
+        server.enqueue(new MockResponse().setResponseCode(503));
         onMain(()->ads.next());
         assertEquals("second",transitions.poll(10,TimeUnit.SECONDS));
     }

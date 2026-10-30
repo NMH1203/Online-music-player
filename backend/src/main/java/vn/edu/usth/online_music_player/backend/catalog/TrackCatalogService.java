@@ -21,7 +21,7 @@ public class TrackCatalogService {
     }
 
     public List<TrackCatalogResponse> listPublishedTracks(String query) {
-        String search = query == null ? "" : query.trim();
+        String search = SearchTerm.normalize(query);
         if (search.length() > 100) {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST, "invalid_query", "Từ khóa tìm kiếm tối đa 100 ký tự.");
@@ -42,7 +42,7 @@ public class TrackCatalogService {
                     TRACK_ROW_MAPPER);
         }
 
-        String pattern = "%" + search + "%";
+        String pattern = SearchTerm.pattern(search);
         return jdbcTemplate.query(
                 """
                 SELECT t.id, t.title, t.duration_seconds, artist.name AS artist_name,

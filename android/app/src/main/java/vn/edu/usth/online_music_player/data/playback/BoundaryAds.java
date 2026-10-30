@@ -3,7 +3,6 @@ package vn.edu.usth.online_music_player.data.playback;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-import android.widget.Toast;
 import androidx.lifecycle.Observer;
 import androidx.media3.common.*;
 import androidx.media3.exoplayer.ExoPlayer;
@@ -55,35 +54,48 @@ public final class BoundaryAds {
         long ticket=++generation;
         String token=AccessTokenStore.getAccessToken();
         long accountGeneration=vn.edu.usth.online_music_player.data.session.SessionManager.get().stamp().generation;
+        Runnable timeout=() -> finishNext(ticket, accountGeneration, token, null);
+        main.postDelayed(timeout, 3000);
         worker.execute(() -> {
             Entitlement result=null;
             try {
-                retrofit2.Response<Entitlement> response=api.entitlement().execute();
+                retrofit2.Call<Entitlement> call=api.entitlement();
+                call.timeout().timeout(3, TimeUnit.SECONDS);
+                retrofit2.Response<Entitlement> response=call.execute();
                 if(response.isSuccessful()) result=response.body();
+                if(response.errorBody()!=null) response.errorBody().close();
             } catch(Exception ignored) {}
             final Entitlement verified=result;
             main.post(() -> {
-                if(released || ticket!=generation || !player.hasNextMediaItem()) return;
-                pending=false;
-                if(AccessTokenStore.getAccessToken()==null || token==null
-                    || accountGeneration!=vn.edu.usth.online_music_player.data.session.SessionManager.get().stamp().generation) {
-                    player.stop(); player.clearMediaItems(); return;
-                }
-                if(verified==null) {
-                    Toast.makeText(context,R.string.ad_verify_failed,Toast.LENGTH_LONG).show();
-                    return;
-                }
-                EntitlementStore.update(verified);
-                if(!verified.adFree) {
-                    MediaItem ad=new MediaItem.Builder().setMediaId(AD_ID)
-                        .setUri("android.resource://"+context.getPackageName()+"/"+R.raw.demo_audio_ad)
-                        .setMediaMetadata(new MediaMetadata.Builder().setTitle(context.getString(R.string.ad_audio_title))
-                            .setArtist(context.getString(R.string.ad_audio_artist)).build()).build();
-                    player.addMediaItem(player.getCurrentMediaItemIndex()+1,ad);
-                }
-                player.seekToNextMediaItem(); player.prepare(); player.play();
+                main.removeCallbacks(timeout);
+                finishNext(ticket, accountGeneration, token, verified);
             });
         });
+    }
+    private void finishNext(long ticket, long accountGeneration, String token, Entitlement verified) {
+        if(released || !pending || ticket!=generation || !player.hasNextMediaItem()) return;
+        pending=false;
+        if(AccessTokenStore.getAccessToken()==null || token==null
+            || accountGeneration!=vn.edu.usth.online_music_player.data.session.SessionManager.get().stamp().generation) {
+            player.stop(); player.clearMediaItems(); return;
+        }
+        boolean adFree;
+        if(verified==null) {
+            Entitlement cached=EntitlementStore.get();
+            adFree=cached!=null && AdFallbackPolicy.adFree(cached.adFree, cached.expiresAt,
+                    EntitlementStore.ageMs(), java.time.Instant.now());
+        } else {
+            EntitlementStore.update(verified);
+            adFree=verified.adFree;
+        }
+        if(!adFree) {
+            MediaItem ad=new MediaItem.Builder().setMediaId(AD_ID)
+                .setUri("android.resource://"+context.getPackageName()+"/"+R.raw.demo_audio_ad)
+                .setMediaMetadata(new MediaMetadata.Builder().setTitle(context.getString(R.string.ad_audio_title))
+                    .setArtist(context.getString(R.string.ad_audio_artist)).build()).build();
+            player.addMediaItem(player.getCurrentMediaItemIndex()+1,ad);
+        }
+        player.seekToNextMediaItem(); player.prepare(); player.play();
     }
     private void onEntitlement(Entitlement entitlement) {
         if(released) return;

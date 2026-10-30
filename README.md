@@ -89,6 +89,17 @@ cd android
 Create an account in the app. Free accounts see the test ads; use **Profile → View Premium** to
 try the simulated upgrade and **Manage plan** to switch back to Free.
 
+## Reliability updates (2026-10-28)
+
+- Completed listening events are saved per account and retried with stable IDs, including after the next app launch.
+- Track transitions fall back to a recent, unexpired Premium entitlement (15-minute grace) or Free if verification fails after 3 seconds.
+- Home returns 401 for invalid supplied credentials so Android can refresh; anonymous Home remains public.
+- Missing audio returns 404 before streaming; unavailable storage returns 503.
+- Release builds require `-PmusicReleaseApiUrl=https://YOUR_BACKEND/`.
+- Export shareable source with `./scripts/Export-Source.ps1`; avoid zipping the entire working directory.
+
+Details and verification: [reliability report](documents/test-reports/2026-10-28-reliability.md).
+
 ## Tests
 
 ```powershell

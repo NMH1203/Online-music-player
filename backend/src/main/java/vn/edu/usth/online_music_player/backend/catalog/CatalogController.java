@@ -138,7 +138,7 @@ public class CatalogController {
     @GetMapping("/search")
     public Map<String, Object> search(
             @RequestParam(name = "q", defaultValue = "") String q) {
-        String term = q.trim();
+        String term = SearchTerm.normalize(q);
 
         if (term.isBlank()) {
             return Map.of(
@@ -148,7 +148,7 @@ public class CatalogController {
             );
         }
 
-        String pattern = "%" + term + "%";
+        String pattern = SearchTerm.pattern(term);
 
         var tracks = db.queryForList("""
             SELECT t.id, t.title,

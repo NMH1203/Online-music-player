@@ -17,6 +17,8 @@ public final class SessionManager {
     private final SecureSessionStorage revocations;
     private final AccountApi rawApi;
     private volatile long generation;
+    private volatile String userId;
+    public String currentUserId() { return userId; }
     public static final class Stamp {
         public final long generation;
         Stamp(long generation) { this.generation=generation; }
@@ -105,6 +107,7 @@ public final class SessionManager {
     private void save(Session session) throws IOException {
         try { storage.write(session.refreshToken); }
         catch(Exception e) { clear(); throw new IOException("Couldn't store the session securely. Sign in again.",e); }
+        userId = session.userId;
         AccessTokenStore.replaceAccessToken(session.accessToken);
     }
     private boolean refreshLocked() throws IOException {
@@ -130,6 +133,7 @@ public final class SessionManager {
     }
     public synchronized void clear() {
         generation++;
+        userId = null;
         storage.clear(); AccessTokenStore.clear(); EntitlementStore.clear();
     }
     public static IOException apiError(retrofit2.Response<?> response) {

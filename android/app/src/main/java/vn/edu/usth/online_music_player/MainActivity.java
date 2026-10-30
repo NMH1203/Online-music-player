@@ -173,7 +173,10 @@ public class MainActivity extends AppCompatActivity implements PlaybackManager.L
 
     /** Requests notification permission at the moment playback is first started on Android 13+. */
     public void playQueue(List<TrackPlayback> tracks, int startIndex) {
-        Runnable action = () -> playbackManager.playQueue(tracks, startIndex);
+        playQueue(tracks, startIndex, "queue", null);
+    }
+    private void playQueue(List<TrackPlayback> tracks, int startIndex, String source, String playlistId) {
+        Runnable action = () -> playbackManager.playQueue(tracks, startIndex, source, playlistId);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -186,10 +189,18 @@ public class MainActivity extends AppCompatActivity implements PlaybackManager.L
 
     /** Loads playback metadata for catalog track ids, then plays them as a queue. */
     public void playTrackIds(List<String> trackIds, int startIndex) {
+        String source = "queue";
+        if (navController != null && navController.getCurrentDestination() != null) {
+            String label = getResources().getResourceEntryName(navController.getCurrentDestination().getId());
+            source = label.replace("_fragment", "");
+        }
+        playTrackIds(trackIds, startIndex, source, null);
+    }
+    public void playTrackIds(List<String> trackIds, int startIndex, String source, String playlistId) {
         playbackRepository.loadQueue(trackIds, new PlaybackRepository.QueueCallback() {
             @Override
             public void onLoaded(List<TrackPlayback> tracks) {
-                playQueue(tracks, startIndex);
+                playQueue(tracks, startIndex, source, playlistId);
             }
 
             @Override

@@ -30,11 +30,23 @@ public class ListeningEventService {
                     HttpStatus.BAD_REQUEST, "validation_failed", "Dữ liệu sự kiện nghe không hợp lệ.");
         }
 
+        dbLock(userId);
         ExistingEvent existing = findExisting(request.clientEventId());
         if (existing != null) {
             return resolveExisting(userId, request, existing);
         }
 
+        Integer recent = jdbcTemplate.queryForObject("""
+                SELECT count(*) FROM (SELECT 1 FROM listening_history WHERE user_id = ?
+                    AND created_at >= now() - interval '1 minute' LIMIT 120) recent
+                """, Integer.class, userId);
+        if (recent != null && recent >= 120) throw new ApiException(
+                HttpStatus.TOO_MANY_REQUESTS, "listen_rate_limit", "Quá nhiều lượt gửi. Vui lòng thử lại sau.");
+        java.time.Instant now = java.time.Instant.now();
+        if (request.startedAt().isAfter(now.plusSeconds(120))
+                || (request.endedAt() != null && request.endedAt().isAfter(now.plusSeconds(120)))) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "future_listen", "Thời gian nghe không được ở tương lai.");
+        }
         if (request.endedAt() != null && request.endedAt().isBefore(request.startedAt())) {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
@@ -74,8 +86,17 @@ public class ListeningEventService {
             }
         }
 
+        java.time.Instant end = request.endedAt() == null ? now : request.endedAt();
+        if (listenedSeconds > java.time.Duration.between(request.startedAt(), end).getSeconds() + 2) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "invalid_listened_seconds", "Thời lượng nghe vượt thời gian thực tế.");
+        }
+        boolean overlaps = Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
+                SELECT EXISTS (SELECT 1 FROM listening_history
+                    WHERE user_id = ? AND counted_as_play = true
+                    AND started_at < ? AND COALESCE(ended_at, started_at + listened_seconds * interval '1 second') > ?)
+                """, Boolean.class, userId, Timestamp.from(end), Timestamp.from(request.startedAt())));
         int threshold = Math.min(30, (int) Math.ceil(durationSeconds * 0.5));
-        boolean countedAsPlay = listenedSeconds >= threshold;
+        boolean countedAsPlay = listenedSeconds >= threshold && !overlaps;
 
         int inserted = jdbcTemplate.update(
                 """
@@ -111,6 +132,10 @@ public class ListeningEventService {
         }
         throw new ApiException(
                 HttpStatus.CONFLICT, "idempotency_conflict", "clientEventId đã được sử dụng.");
+    }
+
+    private void dbLock(UUID userId) {
+        jdbcTemplate.queryForObject("SELECT id FROM users WHERE id = ? FOR UPDATE", UUID.class, userId);
     }
 
     private ExistingEvent findExisting(UUID clientEventId) {

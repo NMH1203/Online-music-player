@@ -9,13 +9,11 @@ import java.util.UUID;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import vn.edu.usth.online_music_player.backend.common.CurrentUserId;
 
 @RestController
@@ -52,10 +50,11 @@ public class PlaybackController {
     }
 
     @GetMapping("/stream")
-    public ResponseEntity<StreamingResponseBody> stream(
+    public void stream(
             Principal principal,
             @PathVariable UUID trackId,
-            @RequestHeader(value = HttpHeaders.RANGE, required = false) String rangeHeader) {
+            @RequestHeader(value = HttpHeaders.RANGE, required = false) String rangeHeader,
+            jakarta.servlet.http.HttpServletResponse response) throws IOException {
         currentUserId.require(principal);
         TrackPlayback track = playbackService.requirePlayableTrack(trackId);
 
@@ -63,10 +62,10 @@ public class PlaybackController {
         try {
             range = ByteRange.parse(rangeHeader, track.fileSizeBytes());
         } catch (InvalidByteRangeException exception) {
-            return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
-                    .header(HttpHeaders.ACCEPT_RANGES, "bytes")
-                    .header(HttpHeaders.CONTENT_RANGE, "bytes */" + track.fileSizeBytes())
-                    .build();
+            response.setStatus(416);
+            response.setHeader(HttpHeaders.ACCEPT_RANGES, "bytes");
+            response.setHeader(HttpHeaders.CONTENT_RANGE, "bytes */" + track.fileSizeBytes());
+            return;
         }
 
         MediaType contentType = audioContentType(track.mimeType());
@@ -80,23 +79,31 @@ public class PlaybackController {
                     "bytes " + range.start() + "-" + range.end() + "/" + track.fileSizeBytes());
         }
 
-        StreamingResponseBody body = output -> {
-            GetObjectArgs args = GetObjectArgs.builder()
-                    .bucket(track.bucketName())
-                    .object(track.objectKey())
-                    .offset(range.start())
-                    .length(range.length())
-                    .build();
-            try (InputStream input = minioClient.getObject(args)) {
-                input.transferTo(output);
-            } catch (Exception exception) {
-                throw new IOException("Unable to stream the audio object from storage.", exception);
+        InputStream object;
+        try {
+            object = minioClient.getObject(GetObjectArgs.builder()
+                    .bucket(track.bucketName()).object(track.objectKey())
+                    .offset(range.start()).length(range.length()).build());
+        } catch (io.minio.errors.ErrorResponseException e) {
+            String code = e.errorResponse().code();
+            if ("NoSuchKey".equals(code) || "NoSuchObject".equals(code)) {
+                throw new vn.edu.usth.online_music_player.backend.common.ApiException(
+                        HttpStatus.NOT_FOUND, "audio_not_found", "Không tìm thấy tệp nhạc trong kho lưu trữ.");
             }
-        };
+            throw storageUnavailable();
+        } catch (Exception e) {
+            throw storageUnavailable();
+        }
+        try (InputStream input = object) {
+            response.setStatus(range.partial() ? 206 : 200);
+            headers.forEach((name, values) -> values.forEach(value -> response.addHeader(name, value)));
+            input.transferTo(response.getOutputStream());
+        }
+    }
 
-        return ResponseEntity.status(range.partial() ? HttpStatus.PARTIAL_CONTENT : HttpStatus.OK)
-                .headers(headers)
-                .body(body);
+    private vn.edu.usth.online_music_player.backend.common.ApiException storageUnavailable() {
+        return new vn.edu.usth.online_music_player.backend.common.ApiException(
+                HttpStatus.SERVICE_UNAVAILABLE, "storage_unavailable", "Kho nhạc tạm thời không khả dụng. Vui lòng thử lại.");
     }
 
     private MediaType audioContentType(String value) {
