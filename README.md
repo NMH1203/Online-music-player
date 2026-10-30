@@ -123,3 +123,24 @@ cd android
 Only music the team may stream is used; sources and required credits are listed in
 [database/demo/ATTRIBUTION.md](database/demo/ATTRIBUTION.md). Never commit `.env`,
 `storage/.env`, `storage/backend.env`, `storage/minio.license`, `runtime/` or keystores.
+
+## Advanced performance benchmarks
+
+The standalone [benchmark suite](benchmarks/README.md) measures the backend with
+concurrent catalog, personalized and audio-streaming workloads. It includes per-stage
+warm-up, p50/p95/p99 latency, time to first byte, throughput, HTTP Range validation,
+JSON/CSV/HTML reports, configurable quality gates and baseline regression checks.
+It uses Python 3.10+ with no third-party packages and only sends read-only GET requests.
+
+```powershell
+# Start the backend first, then run from the repository root.
+python benchmarks/run.py --concurrency 1,4,8 --requests 300 --warmup 30
+
+# Run the benchmark's offline tests (no backend required).
+python -m unittest discover -s benchmarks -p 'test_*.py' -v
+```
+
+Reports are saved in a new directory under `benchmarks/results/`. Authenticated and
+streaming scenarios use an existing access token from the `BENCHMARK_TOKEN` environment
+variable. See [benchmarks/README.md](benchmarks/README.md) for examples, regression gates
+and measurement limitations. On Windows, `py -3` can be used in place of `python`.
